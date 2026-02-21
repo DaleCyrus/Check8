@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Verify QR • CHECK8{% endblock %}
+
+{% block content %}
+  <div class="grid">
+    <section class="card">
+      <h1 class="h1">Verify Student QR</h1>
+      <p class="muted">Scan a QR code (camera) or paste the token string.</p>
+
+      <div class="split">
+        <div>
+          <h2 class="h2">Camera scan</h2>
+          <div id="qrReader" class="qrReader"></div>
+          <div class="muted small">
+            Uses <code>html5-qrcode</code> via CDN. If you are offline, use paste mode.
+          </div>
+        </div>
+
+        <div>
+          <h2 class="h2">Paste token</h2>
+          <form method="post" class="form">
+            <textarea class="input input--mono" name="token" rows="5" placeholder="Paste token here...">{{ token or "" }}</textarea>
+            <button class="btn" type="submit">Verify</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <h2 class="h2">Result</h2>
+      <div id="verifyResult" class="resultBox" data-has-server-result="{{ '1' if student else '0' }}">
+        {% if student %}
+          <div class="resultLine"><strong>Valid</strong></div>
+          <div class="resultLine">Student No.: <code>{{ student.student_number }}</code></div>
+          <div class="resultLine">Name: {{ student.full_name }}</div>
+        {% else %}
+          <div class="muted">No valid scan yet.</div>
+        {% endif %}
+      </div>
+    </section>
+  </div>
+
+  <script src="https://unpkg.com/html5-qrcode@2.3.10/html5-qrcode.min.js"></script>
+  <script>
+    window.CHECK8_VERIFY_JSON_URL = "{{ url_for('admin.verify_json') }}";
+  </script>
+{% endblock %}
+

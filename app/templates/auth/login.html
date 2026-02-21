@@ -1,0 +1,28 @@
+{% extends "base.html" %} {% block title %}Login • CHECK8{% endblock %} {% block content %}
+<div class="card">
+
+
+    <h1 class="h1">Login</h1>
+    <p class="muted">Choose Student or Office login.</p>
+
+    <form method="post" class="form">
+        <label class="label" for="login_as">Login as</label>
+        <select id="login_as" name="login_as" class="input">
+        <option value="student">Student</option>
+        <option value="office">Office</option>
+      </select>
+
+        <label class="label" for="identifier" data-label="identifierLabel">Student Number</label>
+        <input id="identifier" name="identifier" class="input" placeholder="e.g. 2022-0001" autocomplete="username" required />
+
+        <label class="label" for="password">Password</label>
+        <input id="password" name="password" type="password" class="input" autocomplete="current-password" required />
+
+        <button class="btn" type="submit">Login</button>
+        <a class="btn btn--ghost" href="{{ url_for('auth.signup') }}" style="margin-top: 8px; text-align: center; display: block;">
+        Sign up
+      </a>
+    </form>
+
+</div>
+{% endblock %}

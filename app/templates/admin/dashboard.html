@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Office Dashboard • CHECK8{% endblock %}
+
+{% block content %}
+  <section class="card">
+    <h1 class="h1">Office Dashboard</h1>
+    <p class="muted">
+      Office: <strong>{{ office.name }}</strong>
+    </p>
+
+    <div class="toolbar">
+      <a class="btn btn--ghost" href="{{ url_for('admin.verify') }}">Verify QR</a>
+    </div>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Student No.</th>
+          <th>Name</th>
+          <th>Status</th>
+          <th>Note</th>
+          <th>Update</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cs, student in rows %}
+          <tr>
+            <td><code>{{ student.student_number }}</code></td>
+            <td>{{ student.full_name }}</td>
+            <td><span class="badge badge--{{ cs.state }}">{{ cs.state }}</span></td>
+            <td class="muted">{{ cs.note or "—" }}</td>
+            <td>
+              <form class="inlineForm" method="post" action="{{ url_for('admin.set_status') }}">
+                <input type="hidden" name="student_id" value="{{ student.id }}" />
+                <select class="input input--sm" name="state">
+                  <option value="pending" {% if cs.state == "pending" %}selected{% endif %}>pending</option>
+                  <option value="cleared" {% if cs.state == "cleared" %}selected{% endif %}>cleared</option>
+                  <option value="blocked" {% if cs.state == "blocked" %}selected{% endif %}>blocked</option>
+                </select>
+                <input class="input input--sm" name="note" placeholder="Optional note" value="{{ cs.note or '' }}" />
+                <button class="btn btn--sm" type="submit">Save</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+{% endblock %}
+

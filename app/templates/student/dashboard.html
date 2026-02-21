@@ -1,0 +1,53 @@
+{% extends "base.html" %} {% block title %}Student Dashboard • CHECK8{% endblock %} {% block content %}
+<div class="grid">
+    <section class="card">
+        <h1 class="h1">Student Dashboard</h1>
+        <div class="kv">
+            <div class="kv__item">
+                <div class="kv__k">Name</div>
+                <div class="kv__v">{{ current_user.full_name }}</div>
+            </div>
+            <div class="kv__item">
+                <div class="kv__k">Student No.</div>
+                <div class="kv__v">{{ current_user.student_number }}</div>
+            </div>
+        </div>
+
+        <h2 class="h2">Clearance status</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Office</th>
+                    <th>Status</th>
+                    <th>Note</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for office in offices %} {% set st = status_by_office.get(office.id) %} {% set state = (st.state if st else "pending") %}
+                <tr>
+                    <td>{{ office.name }}</td>
+                    <td><span class="badge badge--{{ state }}">{{ state }}</span></td>
+                    <td class="muted">{{ (st.note if st and st.note else "—") }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <aside class="card">
+        <h2 class="h2">Your QR</h2>
+        <p class="muted">Show this QR to offices for fast verification.</p>
+
+        <div class="qrBox">
+            <img class="qrImg" src="{{ url_for('student.qr_png') }}" alt="Student QR code" />
+        </div>
+
+        <details class="details">
+            <summary>Show token (fallback)</summary>
+            <p class="muted small">If scanning is unavailable, you can copy/paste this token.</p>
+            <textarea class="input input--mono" rows="4" readonly data-copy-source>{{ token }}</textarea>
+            <button class="btn btn--ghost" type="button" data-copy-btn>Copy token</button>
+        </details>
+    </aside>
+</div>
+{% endblock %}
