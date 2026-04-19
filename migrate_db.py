@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Migration script to add department and program columns to the User table.
 Run this after updating the User model with the new fields.
@@ -13,7 +12,6 @@ def migrate_database():
     app = create_app()
 
     with app.app_context():
-        # Check if columns already exist
         inspector = db.inspect(db.engine)
         columns = [col['name'] for col in inspector.get_columns('user')]
 
