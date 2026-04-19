@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Cleanup script to remove demo data created by demo_multiple_clearances.py
 """
@@ -23,7 +22,6 @@ def cleanup_demo_data():
             ).rowcount
             print(f"Removed {clearances_deleted} clearance records for demo student")
 
-        # Remove demo faculty users
         demo_usernames = ["faculty1", "faculty2", "faculty3"]
         for username in demo_usernames:
             user = db.session.execute(
@@ -33,12 +31,10 @@ def cleanup_demo_data():
                 db.session.delete(user)
                 print(f"Removed faculty user: {username}")
 
-        # Remove demo student
         if demo_student:
             db.session.delete(demo_student)
             print("Removed demo student: Gian Karlo Student (2022-0001)")
 
-        # Remove demo faculties
         demo_faculty_names = ["Registrar", "Library", "CS Department"]
         for faculty_name in demo_faculty_names:
             faculty = db.session.execute(
