@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Demo script to show a student with multiple clearances from different teachers/faculties.
 """
@@ -23,7 +22,6 @@ def demo_multiple_clearances():
                 db.session.commit()
             faculties.append(faculty)
         
-        # Create faculty users
         for i, faculty in enumerate(faculties):
             username = f"faculty{i+1}"
             user = db.session.execute(
@@ -40,7 +38,6 @@ def demo_multiple_clearances():
                 db.session.add(user)
                 db.session.commit()
         
-        # Create student if doesn't exist
         student = db.session.execute(
             db.select(User).where(User.student_number == "2022-0001")
         ).scalar_one_or_none()
@@ -59,9 +56,7 @@ def demo_multiple_clearances():
         
         print(f"Adding student {student.full_name} ({student.student_number}) to multiple faculties:")
         
-        # Add student to each faculty's clearance list
         for faculty in faculties:
-            # Check if already exists
             existing = db.session.execute(
                 db.select(ClearanceStatus).where(
                     ClearanceStatus.student_id == student.id,
@@ -82,7 +77,6 @@ def demo_multiple_clearances():
         
         db.session.commit()
         
-        # Show all clearances for this student
         clearances = db.session.execute(
             db.select(ClearanceStatus, Faculty)
             .join(Faculty, ClearanceStatus.faculty_id == Faculty.id)
