@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}CHECK8{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <script defer src="{{ url_for('static', filename='app.js') }}"></script>
+</head>
+
+<body>
+    <header class="topbar">
+        <div class="container topbar__inner">
+            <div class="brand">
+                <div class="brand__logo">C8</div>
+                <div class="brand__text">
+                    <div class="brand__name">CHECK8</div>
+                    <div class="brand__tag">QR-enabled clearance management</div>
+                </div>
+            </div>
+
+            <nav class="nav">
+                {% if current_user.is_authenticated %} {% if current_user.is_student %}
+                <a class="nav__link" href="{{ url_for('student.dashboard') }}">Dashboard</a> {% else %}
+                <a class="nav__link" href="{{ url_for('admin.dashboard') }}">Faculty Dashboard</a>
+                <a class="nav__link" href="{{ url_for('admin.verify') }}">Verify QR</a> {% endif %}
+                <form class="nav__logout" method="post" action="{{ url_for('auth.logout') }}">
+                    <button class="btn btn--ghost" type="submit">Logout</button>
+                </form>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %}
+        <div class="flash">
+            {% for category, message in messages %}
+            <div class="flash__item flash__item--{{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %} {% endwith %} {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <div class="container footer__inner">
+            <div>CHECK8 starter • Flask + QR</div>
+        </div>
+    </footer>
+</body>
+
+</html>

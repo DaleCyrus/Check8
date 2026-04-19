@@ -1,0 +1,35 @@
+{% extends "base.html" %} {% block title %}Instructor Sign up • CHECK8{% endblock %} {% block content %}
+<div class="card">
+    <button type="button" class="btn btn--ghost" onclick="window.history.back()" style="margin-bottom: 12px;">
+        ← Back
+    </button>
+    <h1 class="h1">Instructor / Faculty/Officers Sign up</h1>
+    <p class="muted">Create an account to manage clearance status for your faculty/officers.</p>
+
+    <form method="post" class="form">
+        <label class="label" for="office_name">Department/Course name</label>
+        <input id="office_name" name="office_name" class="input" placeholder="e.g. CS Department" value="{{ office_name or '' }}" required />
+
+        <label class="label" for="username">Login username</label>
+        <input id="username" name="username" class="input" placeholder="e.g. csdept" value="{{ username or '' }}" required />
+
+        <label class="label" for="full_name">Your full name</label>
+        <input id="full_name" name="full_name" class="input" placeholder="e.g. Prof. Juan Dela Cruz" value="{{ full_name or '' }}" required />
+
+        <label class="label" for="password">Password</label>
+        <input id="password" name="password" type="password" class="input" autocomplete="new-password" required />
+
+        <label class="label" for="confirm_password">Confirm password</label>
+        <input id="confirm_password" name="confirm_password" type="password" class="input" autocomplete="new-password" required />
+
+        <button class="btn" type="submit">Create instructor account</button>
+    </form>
+
+    <div class="divider"></div>
+
+    <div class="muted small">
+        Already have an account?
+        <a href="{{ url_for('auth.login') }}">Back to login</a>.
+    </div>
+</div>
+{% endblock %}

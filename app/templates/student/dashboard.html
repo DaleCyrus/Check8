@@ -1,0 +1,69 @@
+{% extends "base.html" %} {% block title %}Student Dashboard • CHECK8{% endblock %} {% block content %}
+<div class="grid">
+    <section class="card">
+        <h1 class="h1">Student Dashboard</h1>
+        <div class="kv">
+            <div class="kv__item">
+                <div class="kv__k">Name</div>
+                <div class="kv__v">{{ current_user.full_name }}</div>
+            </div>
+            <div class="kv__item">
+                <div class="kv__k">Student No.</div>
+                <div class="kv__v">{{ current_user.student_number }}</div>
+            </div>
+            <div class="kv__item">
+                <div class="kv__k">Department</div>
+                <div class="kv__v">{{ current_user.department or 'Not specified' }}</div>
+            </div>
+            <div class="kv__item">
+                <div class="kv__k">Program</div>
+                <div class="kv__v">{{ current_user.program or 'Not specified' }}</div>
+            </div>
+        </div>
+
+        <h2 class="h2">Clearance status</h2>
+        {% if clearances %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Faculty/Department</th>
+                    <th>Instructor</th>
+                    <th>Status</th>
+                    <th>Note</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cs, faculty, instructor in clearances %}
+                <tr>
+                    <td>{{ faculty.name }}</td>
+                    <td>{{ instructor if instructor else '—' }}</td>
+                    <td>
+                        {% if cs.state == 'pending' %}
+                            <span class="badge badge--pending">Pending</span>
+                        {% elif cs.state == 'cleared' %}
+                            <span class="badge badge--cleared">Approved</span>
+                        {% elif cs.state == 'blocked' %}
+                            <span class="badge badge--blocked">Rejected</span>
+                        {% else %}
+                            <span class="badge">{{ cs.state }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="muted">{{ cs.note or "—" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="muted">You haven't been added to any faculty clearance lists yet.</p>
+        {% endif %}
+    </section>
+
+    <aside class="card">
+        <h2 class="h2">Your QR</h2>
+        <p class="muted">Show this QR to faculties for fast verification. When scanned, it will show your name.</p>
+        <div class="qrBox">
+            <img class="qrImg" src="{{ url_for('student.qr_png') }}" alt="Student QR code" />
+        </div>
+    </aside>
+</div>
+{% endblock %}

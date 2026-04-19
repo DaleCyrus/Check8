@@ -1,0 +1,21 @@
+{% extends "base.html" %} {% block title %}Sign up • CHECK8{% endblock %} {% block content %}
+<div class="card">
+    <button type="button" class="btn btn--ghost" onclick="window.history.back()" style="margin-bottom: 12px;">
+        ← Back
+    </button>
+    <h1 class="h1">Choose account type</h1>
+    <p class="muted">Create a new CHECK8 account as a student or as an Faculty/Officers.</p>
+
+    <div class="form" style="margin-top:16px;">
+        <a class="btn" href="{{ url_for('auth.signup_student') }}">I am a student</a>
+        <a class="btn btn--ghost" href="{{ url_for('auth.signup_instructor') }}">I am an  Faculty/Officers</a>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="muted small">
+        Already have an account?
+        <a href="{{ url_for('auth.login') }}">Back to login</a>.
+    </div>
+</div>
+{% endblock %}

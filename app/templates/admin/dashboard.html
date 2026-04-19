@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% block title %}Faculty Dashboard • CHECK8{% endblock %}
+
+{% block content %}
+  <section class="card">
+    <h1 class="h1">Faculty/Officers Dashboard</h1>
+    <p class="muted">
+      Managing: <strong>{{ assigned_faculties|join(', ', attribute='name') }}</strong>
+    </p>
+
+    <div class="toolbar">
+      <a class="btn btn--ghost" href="{{ url_for('admin.verify') }}">Verify QR</a>
+    </div>
+
+    <!-- Add Students Section -->
+    <div class="card card--nested" style="margin-bottom: 2rem;">
+      <h2 class="h3" style="margin-top: 0;">Add Students to Clearance Lists</h2>
+      <p class="muted">Search for and add students who need clearance from your assigned faculties.</p>
+      
+      <div class="searchContainer" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+        <input 
+          type="text" 
+          id="studentSearch" 
+          class="input" 
+          placeholder="Search by student number or name..."
+          autocomplete="off"
+          style="flex: 1;"
+        />
+        <button class="btn" onclick="searchStudents()">Search</button>
+      </div>
+
+      <div id="searchResults" style="display: none; margin-bottom: 1rem;">
+        <div class="muted" style="margin-bottom: 1rem;">
+          Found <span id="resultCount">0</span> result(s):
+        </div>
+        <div id="resultsList" style="max-height: 300px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 0.375rem; padding: 0.5rem 0;"></div>
+      </div>
+
+      <div id="noResults" class="muted" style="display: none; padding: 1rem; text-align: center; background: #f5f5f5; border-radius: 0.375rem;">
+        No results found. Try a different search.
+      </div>
+
+      <div id="searchError" style="display: none; padding: 1rem; background: #fee; border: 1px solid #fcc; border-radius: 0.375rem; color: #c33; margin-bottom: 1rem;"></div>
+    </div>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Course</th>
+          <th>Student No.</th>
+          <th>Name</th>
+          <th>Department</th>
+          <th>Program</th>
+          <th>Status</th>
+          <th>Note</th>
+          <th>Update</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cs, student, faculty in rows %}
+          <tr>
+            <td><strong>{{ faculty.name }}</strong></td>
+            <td><code>{{ student.student_number }}</code></td>
+            <td>{{ student.full_name }}</td>
+            <td>{{ student.department or '—' }}</td>
+            <td>{{ student.program or '—' }}</td>
+            <td>
+              {% if cs.state == 'pending' %}
+                <span class="badge badge--pending">Pending</span>
+              {% elif cs.state == 'cleared' %}
+                <span class="badge badge--cleared">Approved</span>
+              {% elif cs.state == 'blocked' %}
+                <span class="badge badge--blocked">Rejected</span>
+              {% else %}
+                <span class="badge">{{ cs.state }}</span>
+              {% endif %}
+            </td>
+            <td class="muted">{{ cs.note or "—" }}</td>
+            <td>
+              <form class="inlineForm" method="post" action="{{ url_for('admin.set_status') }}">
+                <input type="hidden" name="student_id" value="{{ student.id }}" />
+                <input type="hidden" name="faculty_id" value="{{ faculty.id }}" />
+                <select class="input input--sm" name="state">
+                  <option value="pending" {% if cs.state == "pending" %}selected{% endif %}>Pending</option>
+                  <option value="cleared" {% if cs.state == "cleared" %}selected{% endif %}>Approved</option>
+                  <option value="blocked" {% if cs.state == "blocked" %}selected{% endif %}>Rejected</option>
+                </select>
+                <input class="input input--sm" name="note" placeholder="Optional note" value="{{ cs.note or '' }}" />
+                <button class="btn btn--sm" type="submit">Save</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <script>
+  async function searchStudents() {
+    const searchInput = document.getElementById('studentSearch');
+    const query = (searchInput.value || '').trim();
+    const searchError = document.getElementById('searchError');
+    const searchResults = document.getElementById('searchResults');
+    const noResults = document.getElementById('noResults');
+    
+    searchError.style.display = 'none';
+    searchResults.style.display = 'none';
+    noResults.style.display = 'none';
+    
+    if (!query) {
+      searchError.textContent = 'Please enter a search query';
+      searchError.style.display = 'block';
+      return;
+    }
+    
+    try {
+      const response = await fetch('{{ url_for("admin.search_students") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ q: query })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        searchError.textContent = data.error || 'Search failed';
+        searchError.style.display = 'block';
+        return;
+      }
+      
+      if (!data.ok) {
+        searchError.textContent = data.error || 'Search error';
+        searchError.style.display = 'block';
+        return;
+      }
+      
+      const results = data.results || [];
+      
+      if (results.length === 0) {
+        noResults.style.display = 'block';
+        return;
+      }
+      
+      const resultsList = document.getElementById('resultsList');
+      resultsList.innerHTML = results.map(student => {
+        const assignedFaculties = {{ assigned_faculties_json|tojson }};
+        const alreadyAddedFaculties = student.already_added_faculties || [];
+        
+        // Create faculty options for faculties not already added
+        const facultyOptions = assignedFaculties
+          .filter(faculty => !alreadyAddedFaculties.includes(faculty.id))
+          .map(faculty => `<option value="${faculty.id}">${faculty.name}</option>`)
+          .join('');
+        
+        let actionHtml;
+        if (facultyOptions) {
+          actionHtml = `
+            <form method="post" action="{{ url_for('admin.add_student') }}" style="display: inline;">
+              <input type="hidden" name="student_id" value="${student.id}" />
+              <select name="faculty_id" class="input input--sm" style="margin-right: 0.5rem;">
+                <option value="">Select Faculty</option>
+                ${facultyOptions}
+              </select>
+              <button type="submit" class="btn btn--sm">Add</button>
+            </form>
+          `;
+        } else {
+          actionHtml = '<span class="badge badge--cleared" style="font-size: 0.875rem;">Already in all faculties</span>';
+        }
+        
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border-bottom: 1px solid #e5e7eb; transition: background 0.2s;">
+            <div>
+              <div><strong>${student.student_number}</strong></div>
+              <div class="muted small">${student.full_name}</div>
+            </div>
+            ${actionHtml}
+          </div>
+        `;
+      }).join('');
+      
+      document.getElementById('resultCount').textContent = results.length;
+      searchResults.style.display = 'block';
+      
+    } catch (error) {
+      searchError.textContent = 'Network error: ' + error.message;
+      searchError.style.display = 'block';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('studentSearch');
+    if (searchInput) {
+      searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          searchStudents();
+        }
+      });
+    }
+  });
+  </script>
+
+  <style>
+  .card--nested {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    padding: 1.5rem;
+  }
+
+  #resultsList > div:last-child {
+    border-bottom: none;
+  }
+
+  #resultsList > div:hover {
+    background: #f0f0f0;
+  }
+  </style>
+{% endblock %}
+
