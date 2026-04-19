@@ -1,4 +1,4 @@
-# CHECK8 (Flask Starter)
+# CHECK8 
 
 CHECK8 is a web-based, QR-enabled clearance management system for BS Computer Science student clearance.
 
