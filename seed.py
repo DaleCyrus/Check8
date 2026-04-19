@@ -6,17 +6,13 @@ from app.extensions import db
 from app.models import ClearanceState, ClearanceStatus, Faculty, Role, User
 
 
-# You can freely add more faculties / students here.
-# Just append new tuples following the same pattern.
 FACULTY_DEFS: list[tuple[str, str, str, str]] = [
-    # (faculty_name, username, full_name, password)
     ("Registrar", "registrar", "Registrar Office", "office123"),
     ("Library", "library", "Library Office", "office123"),
     ("CS Department", "csdept", "CS Department Office", "office123"),
 ]
 
 STUDENT_DEFS: list[tuple[str, str, str, str, str]] = [
-    # (student_number, full_name, department, program, password)
     ("2022-0001", "Gian Karlo Student", "College of Computer Studies", "Bachelor of Science in Computer Science", "student123"),
     ("2022-0002", "Sample Student Two", "College of Engineering", "Bachelor of Science in Civil Engineering", "student123"),
 ]
@@ -65,7 +61,6 @@ def get_or_create_faculty_user(username: str, full_name: str, password: str, fac
     db.session.add(u)
     db.session.commit()
 
-    # Create faculty assignment
     from .models import FacultyAssignment
     assignment = FacultyAssignment(
         user_id=u.id,
@@ -76,9 +71,7 @@ def get_or_create_faculty_user(username: str, full_name: str, password: str, fac
     return u
 
 
-# Removed automatic clearance row creation.
-# Staff now explicitly add students via the "Add Students to Clearance List" feature.
-# This ensures staff only see students they've specifically added.
+
 def ensure_clearance_rows(student: User, faculties: list[Faculty]) -> None:
     pass
 
@@ -94,7 +87,6 @@ def main():
             db.drop_all()
             db.create_all()
 
-        # Faculties + faculty users
         faculties_by_name: dict[str, Faculty] = {}
         for faculty_name, username, full_name, password in FACULTY_DEFS:
             faculty = get_or_create_faculty(faculty_name)
@@ -103,7 +95,6 @@ def main():
 
         faculties = list(faculties_by_name.values())
 
-        # Students
         students: list[User] = []
         for stud_num, full_name, department, program, password in STUDENT_DEFS:
             s = get_or_create_student(stud_num, full_name, department, program, password)
