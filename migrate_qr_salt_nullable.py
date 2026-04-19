@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Migration script to make qr_salt column nullable in the User table.
 """
@@ -14,10 +13,7 @@ def migrate_qr_salt_nullable():
     with app.app_context():
         print("Making qr_salt column nullable...")
 
-        # For SQLite, we need to recreate the table to change nullability
-        # First, create a temporary table with the correct schema
         with db.engine.connect() as conn:
-            # Create new table with nullable qr_salt
             conn.execute(text("""
                 CREATE TABLE user_new (
                     id INTEGER NOT NULL,
@@ -48,7 +44,7 @@ def migrate_qr_salt_nullable():
 
             conn.commit()
 
-        print("✓ qr_salt column made nullable")
+        print(" qr_salt column made nullable")
 
         print("Migration completed successfully!")
 
