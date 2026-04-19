@@ -1,4 +1,3 @@
-# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -7,10 +6,8 @@ __pycache__/
 venv/
 env/
 
-# Env / secrets (keep .env.example tracked)
 .env
 
-# Local SQLite databases and WAL files
 *.db
 *.db-shm
 *.db-wal
