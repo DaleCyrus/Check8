@@ -18,28 +18,6 @@ CHECK8 is a web-based, QR-enabled clearance management system for BS Computer Sc
 - DB: SQLite (via SQLAlchemy)
 - QR: `qrcode` (server-side) + optional camera scanning via `html5-qrcode` (CDN)
 
-## Setup (Windows / PowerShell)
-
-From the `check8` folder:
-
-```bash
-py -m venv .venv
-.\.venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-Create a `.env` file:
-
-```bash
-copy .env.example .env
-```
-
-Seed the database (creates sample users and offices):
-
-```bash
-python seed.py
-```
-
 Run:
 
 ```bash
