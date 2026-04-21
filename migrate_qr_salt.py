@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Migration script to add qr_salt column to the User table.
 Run this after updating the User model with the qr_salt field.
@@ -14,18 +13,15 @@ def migrate_database():
     app = create_app()
 
     with app.app_context():
-        # Check if column already exists
         inspector = db.inspect(db.engine)
         columns = [col['name'] for col in inspector.get_columns('user')]
 
         if 'qr_salt' not in columns:
             print("Adding qr_salt column...")
             with db.engine.connect() as conn:
-                # Add the column as nullable
                 conn.execute(text('ALTER TABLE user ADD COLUMN qr_salt VARCHAR(64)'))
                 conn.commit()
 
-                # Generate unique qr_salt values for existing student users only
                 student_users = conn.execute(text("SELECT id FROM user WHERE role = 'student'")).fetchall()
                 for user in student_users:
                     qr_salt = str(uuid.uuid4())

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Demo script to show a student with multiple clearances from different courses.
 """
@@ -23,31 +22,7 @@ def demo_multiple_clearances():
                 db.session.commit()
             faculties.append(faculty)
         
-        # Create courses under each faculty
-        course_configs = [
-            ("Registrar", "Clearance from Registrar"),
-            ("Library", "Library Card Clearance"),
-            ("CS Department", "College of Computer Studies"),
-        ]
-        
-        courses = []
-        for faculty_name, course_name in course_configs:
-            faculty = next(f for f in faculties if f.name == faculty_name)
-            course = db.session.execute(
-                db.select(Course).where(Course.name == course_name)
-            ).scalar_one_or_none()
-            if not course:
-                course = Course(
-                    code=f"{faculty_name.replace(' ', '_').upper()}_001",
-                    name=course_name,
-                    faculty_id=faculty.id,
-                )
-                db.session.add(course)
-                db.session.commit()
-            courses.append((course, faculty))
-        
         # Create faculty users
-        faculty_users = []
         for i, faculty in enumerate(faculties):
             username = f"faculty{i+1}"
             user = db.session.execute(
@@ -70,7 +45,6 @@ def demo_multiple_clearances():
                 db.session.commit()
             faculty_users.append((user, faculty))
         
-        # Create student if doesn't exist
         student = db.session.execute(
             db.select(User).where(User.student_number == "2022-0001")
         ).scalar_one_or_none()
@@ -90,8 +64,8 @@ def demo_multiple_clearances():
         
         print(f"Adding student {student.full_name} ({student.student_number}) to multiple course clearances:")
         
-        # Add student to each course's clearance list
-        for course, faculty in courses:
+        # Add student to each faculty's clearance list
+        for faculty in faculties:
             # Check if already exists
             existing = db.session.execute(
                 db.select(ClearanceStatus).where(
@@ -113,7 +87,6 @@ def demo_multiple_clearances():
         
         db.session.commit()
         
-        # Show all clearances for this student
         clearances = db.session.execute(
             db.select(ClearanceStatus, Course, Faculty)
             .join(Course, ClearanceStatus.course_id == Course.id)
