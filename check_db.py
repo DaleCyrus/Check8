@@ -5,7 +5,7 @@ Check current database contents
 
 from app import create_app
 from app.extensions import db
-from app.models import ClearanceStatus, Faculty, User
+from app.models import ClearanceStatus, Course, Faculty, User
 
 def check_database():
     app = create_app()
@@ -36,13 +36,14 @@ def check_database():
 
         print("\nCLEARANCE STATUSES:")
         clearances = db.session.execute(
-            db.select(ClearanceStatus, User, Faculty)
+            db.select(ClearanceStatus, User, Course, Faculty)
             .join(User, ClearanceStatus.student_id == User.id)
-            .join(Faculty, ClearanceStatus.faculty_id == Faculty.id)
+            .join(Course, ClearanceStatus.course_id == Course.id)
+            .join(Faculty, Course.faculty_id == Faculty.id)
         ).all()
         if clearances:
-            for cs, student, faculty in clearances:
-                print(f"  - {student.full_name} ({student.student_number}) - {faculty.name}: {cs.state}")
+            for cs, student, course, faculty in clearances:
+                print(f"  - {student.full_name} ({student.student_number}) - {course.name} ({faculty.name}): {cs.state}")
         else:
             print("  No clearance statuses found")
 

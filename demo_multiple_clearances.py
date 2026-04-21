@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """
-Demo script to show a student with multiple clearances from different teachers/faculties.
+Demo script to show a student with multiple clearances from different courses.
 """
 
 from app import create_app
 from app.extensions import db
-from app.models import ClearanceState, ClearanceStatus, Faculty, Role, User
+from app.models import ClearanceState, ClearanceStatus, Course, Faculty, FacultyAssignment, Role, User
 
 def demo_multiple_clearances():
     app = create_app()
     with app.app_context():
         # Create faculties if they don't exist
-        faculty_names = ["Registrar", "Library", "CS Department"]
+        faculty_names = ["Registrar", "Library", "College of Computer Studies"]
         faculties = []
         for name in faculty_names:
             faculty = db.session.execute(
@@ -23,7 +23,31 @@ def demo_multiple_clearances():
                 db.session.commit()
             faculties.append(faculty)
         
+        # Create courses under each faculty
+        course_configs = [
+            ("Registrar", "Clearance from Registrar"),
+            ("Library", "Library Card Clearance"),
+            ("CS Department", "College of Computer Studies"),
+        ]
+        
+        courses = []
+        for faculty_name, course_name in course_configs:
+            faculty = next(f for f in faculties if f.name == faculty_name)
+            course = db.session.execute(
+                db.select(Course).where(Course.name == course_name)
+            ).scalar_one_or_none()
+            if not course:
+                course = Course(
+                    code=f"{faculty_name.replace(' ', '_').upper()}_001",
+                    name=course_name,
+                    faculty_id=faculty.id,
+                )
+                db.session.add(course)
+                db.session.commit()
+            courses.append((course, faculty))
+        
         # Create faculty users
+        faculty_users = []
         for i, faculty in enumerate(faculties):
             username = f"faculty{i+1}"
             user = db.session.execute(
@@ -33,12 +57,18 @@ def demo_multiple_clearances():
                 user = User(
                     role=Role.FACULTY.value,
                     username=username,
-                    full_name=f"{faculty.name} Staff",
-                    faculty_id=faculty.id,
+                    full_name=f"{faculty.name} Officer",
+                    email=f"{username}@school.edu",
                 )
                 user.set_password("faculty123")
                 db.session.add(user)
                 db.session.commit()
+                
+                # Assign user to faculty
+                assignment = FacultyAssignment(user_id=user.id, faculty_id=faculty.id)
+                db.session.add(assignment)
+                db.session.commit()
+            faculty_users.append((user, faculty))
         
         # Create student if doesn't exist
         student = db.session.execute(
@@ -49,7 +79,8 @@ def demo_multiple_clearances():
             student = User(
                 role=Role.STUDENT.value,
                 student_number="2022-0001",
-                full_name="Gian Karlo Student",
+                full_name="Gian Karlo Reguindin",
+                email="student@school.edu",
                 department="College of Computer Studies",
                 program="Bachelor of Science in Computer Science",
             )
@@ -57,47 +88,52 @@ def demo_multiple_clearances():
             db.session.add(student)
             db.session.commit()
         
-        print(f"Adding student {student.full_name} ({student.student_number}) to multiple faculties:")
+        print(f"Adding student {student.full_name} ({student.student_number}) to multiple course clearances:")
         
-        # Add student to each faculty's clearance list
-        for faculty in faculties:
+        # Add student to each course's clearance list
+        for course, faculty in courses:
             # Check if already exists
             existing = db.session.execute(
                 db.select(ClearanceStatus).where(
                     ClearanceStatus.student_id == student.id,
-                    ClearanceStatus.faculty_id == faculty.id,
+                    ClearanceStatus.course_id == course.id,
                 )
             ).scalar_one_or_none()
             
             if existing:
-                print(f"  - Already in {faculty.name} clearance list")
+                print(f"  - Already in {course.name} clearance list")
             else:
                 cs = ClearanceStatus(
                     student_id=student.id,
-                    faculty_id=faculty.id,
+                    course_id=course.id,
                     state=ClearanceState.PENDING.value,
                 )
                 db.session.add(cs)
-                print(f"  - Added to {faculty.name} clearance list")
+                print(f"  - Added to {course.name} clearance list")
         
         db.session.commit()
         
         # Show all clearances for this student
         clearances = db.session.execute(
-            db.select(ClearanceStatus, Faculty)
-            .join(Faculty, ClearanceStatus.faculty_id == Faculty.id)
+            db.select(ClearanceStatus, Course, Faculty)
+            .join(Course, ClearanceStatus.course_id == Course.id)
+            .join(Faculty, Course.faculty_id == Faculty.id)
             .where(ClearanceStatus.student_id == student.id)
         ).all()
         
         print(f"\nStudent {student.full_name} has clearances from:")
-        for cs, faculty in clearances:
-            print(f"  - {faculty.name}: {cs.state}")
+        for cs, course, faculty in clearances:
+            print(f"  - {course.name} ({faculty.name}): {cs.state}")
         
         print("\nDemo complete!")
         print("You can now:")
-        print("1. Login as student (2022-0001 / student123) to see multiple clearances")
-        print("2. Login as faculty1 (faculty1 / faculty123) to manage Registrar clearances")
-        print("3. Login as faculty2 (faculty2 / faculty123) to manage Library clearances")
+        print("1. Login as student (2022-0001 / student123) to see multiple course clearances")
+        print("2. Login as faculty1 (faculty1 / faculty123) to manage Registrar course clearances")
+        print("3. Login as faculty2 (faculty2 / faculty123) to manage Library course clearances")
+        print("4. Login as faculty3 (faculty3 / faculty123) to manage CS Department clearances")
+
+if __name__ == "__main__":
+    demo_multiple_clearances()
         print("4. Login as faculty3 (faculty3 / faculty123) to manage CS Department clearances")
 
 if __name__ == "__main__":

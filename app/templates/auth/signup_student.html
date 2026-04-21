@@ -15,7 +15,7 @@
         id="student_number"
         name="student_number"
         class="input"
-        placeholder="e.g. 2022-0003"
+        placeholder="e.g. 20xxxxxxx"
         value="{{ student_number or '' }}"
         required
       />
@@ -27,6 +27,17 @@
         class="input"
         placeholder="e.g. Juan Dela Cruz"
         value="{{ full_name or '' }}"
+        required
+      />
+
+      <label class="label" for="email">Institutional Email</label>
+      <input
+        id="email"
+        name="email"
+        type="email"
+        class="input"
+        placeholder="e.g. 20xxxxxxx@gordoncollege.edu.ph"
+        value="{{ email or '' }}"
         required
       />
 

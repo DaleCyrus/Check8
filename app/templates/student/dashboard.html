@@ -26,17 +26,15 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th>Faculty/Department</th>
-                    <th>Instructor</th>
+                    <th>Course</th>
                     <th>Status</th>
                     <th>Note</th>
                 </tr>
             </thead>
             <tbody>
-                {% for cs, faculty, instructor in clearances %}
+                {% for cs, course, faculty in clearances %}
                 <tr>
-                    <td>{{ faculty.name }}</td>
-                    <td>{{ instructor if instructor else '—' }}</td>
+                    <td><strong>{{ course.code }} - {{ course.name }}</strong></td>
                     <td>
                         {% if cs.state == 'pending' %}
                             <span class="badge badge--pending">Pending</span>
@@ -54,13 +52,13 @@
             </tbody>
         </table>
         {% else %}
-        <p class="muted">You haven't been added to any faculty clearance lists yet.</p>
+        <p class="muted">You haven't been added to any clearance lists yet.</p>
         {% endif %}
     </section>
 
     <aside class="card">
         <h2 class="h2">Your QR</h2>
-        <p class="muted">Show this QR to faculties for fast verification. When scanned, it will show your name.</p>
+        <p class="muted">Show this QR to faculties for verification. When scanned, it will verify your identity securely.</p>
         <div class="qrBox">
             <img class="qrImg" src="{{ url_for('student.qr_png') }}" alt="Student QR code" />
         </div>

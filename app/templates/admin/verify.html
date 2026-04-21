@@ -10,16 +10,35 @@
       <div class="split">
         <div>
           <h2 class="h2">Camera scan</h2>
-          <div id="qrReader" class="qrReader"></div>
-          <div class="muted small">
-            Uses <code>html5-qrcode</code> via CDN. If you are offline, use paste mode.
+          
+          <div id="cameraControls" class="cameraControls" style="display: none; margin-bottom: 1rem; gap: 0.5rem;">
+            <button id="toggleCamera" class="btn btn--sm" type="button">Stop Camera</button>
+            <button id="toggleTorch" class="btn btn--sm btn--ghost" type="button" style="display: none;">💡 Torch</button>
+          </div>
+
+          <div id="qrReader" class="qrReader" style="min-height: 320px; display: flex; align-items: center; justify-content: center;">
+            <div style="text-align: center; color: #bfa074;">
+              <div style="font-size: 2em; margin-bottom: 0.5rem;">📷</div>
+              <div style="margin-bottom: 1rem;">Loading camera...</div>
+              <div style="font-size: 0.875rem;">If this takes too long, use Paste mode below</div>
+            </div>
+          </div>
+          
+          <div id="cameraStatus" class="muted small" style="margin-top: 0.5rem; text-align: center;">
+            <span id="cameraLoading" style="display: none;">🔄 Initializing camera...</span>
+            <span id="cameraReady" style="display: none;">✓ Camera ready</span>
+            <span id="cameraError" style="display: none; color: #dc2626;"></span>
+          </div>
+
+          <div class="muted small" style="margin-top: 0.5rem;">
+            Uses <code>html5-qrcode</code>. If offline or no camera, use paste mode.
           </div>
         </div>
 
         <div>
           <h2 class="h2">Paste token</h2>
-          <form method="post" class="form">
-            <textarea class="input input--mono" name="token" rows="5" placeholder="Paste token here...">{{ token or "" }}</textarea>
+          <form id="pasteTokenForm" class="form" onsubmit="handlePasteTokenSubmit(event)">
+            <textarea id="tokenInput" class="input input--mono" name="token" rows="5" placeholder="Paste token here...">{{ token or "" }}</textarea>
             <button class="btn" type="submit">Verify</button>
           </form>
         </div>
@@ -40,9 +59,64 @@
     </section>
   </div>
 
-  <script src="https://unpkg.com/html5-qrcode@2.3.10/html5-qrcode.min.js"></script>
+  <script>
+    console.log('Verify page loaded');
+  </script>
+  <script src="{{ url_for('static', filename='html5-qrcode.min.js') }}"></script>
   <script>
     window.CHECK8_VERIFY_JSON_URL = "{{ url_for('admin.verify_json') }}";
+    window.CHECK8_SET_STATUS_URL = "{{ url_for('admin.set_status') }}";
+    
+    console.log('Html5Qrcode library status:', window.Html5Qrcode ? 'LOADED' : 'NOT LOADED');
+    
+    // Wait for library and setupQrScanner function to be ready
+    let waitAttempts = 0;
+    const maxWaitTime = 3000; // 3 seconds timeout
+    const startTime = Date.now();
+    
+    function initializeCamera() {
+      waitAttempts++;
+      const elapsed = Date.now() - startTime;
+      
+      console.log('Init attempt', waitAttempts, '- Html5Qrcode:', !!window.Html5Qrcode, 'setupQrScanner:', typeof setupQrScanner);
+      
+      // Check if both library and function are ready
+      if (window.Html5Qrcode && typeof setupQrScanner === 'function') {
+        console.log('✓ Camera scanner initialized at', elapsed, 'ms');
+        setupQrScanner();
+        return;
+      }
+      
+      // Timeout - show error
+      if (elapsed > maxWaitTime) {
+        console.error('✗ Scanner initialization timeout after ' + elapsed + 'ms');
+        const cameraDiv = document.getElementById('qrReader');
+        const statusEl = document.getElementById('cameraError');
+        
+        if (cameraDiv) {
+          cameraDiv.innerHTML = '<div style="padding: 2rem; text-align: center; color: #2d1600;"><div style="font-size: 2.5em; margin-bottom: 1rem;">⚠️</div><strong style="font-size: 1.1em; display: block; margin-bottom: 0.5rem;">Camera Setup Timeout</strong><div style="font-size: 0.9em; margin-bottom: 1rem; color: #bfa074;">The camera library took too long to initialize.</div><div style="font-size: 0.85em; color: #bfa074;"><strong>Please use the Paste token section below instead.</strong></div></div>';
+        }
+        if (statusEl) {
+          statusEl.textContent = 'Library initialization timed out';
+          statusEl.style.display = 'inline';
+        }
+        return;
+      }
+      
+      // Keep waiting
+      setTimeout(initializeCamera, 100);
+    }
+    
+    // Start initialization
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        console.log('DOMContentLoaded fired');
+        initializeCamera();
+      });
+    } else {
+      console.log('DOM already ready, initializing camera');
+      initializeCamera();
+    }
   </script>
 {% endblock %}
 

@@ -126,7 +126,15 @@ body{
 .resultBox{border:1px solid var(--border);border-radius:14px;padding:12px;background:rgba(255,255,255,.03)}
 .resultLine{margin:6px 0}
 
+.cameraControls{display:flex;gap:8px;flex-wrap:wrap}
+.cameraControls .btn{flex:1;min-width:120px}
+
 .footer{border-top:1px solid var(--border);margin-top:28px}
 .footer__inner{color:var(--muted);font-size:12px;padding:16px 20px}
 
 code{color:var(--accent-dark)}
+
+@keyframes scaleIn{
+  from{transform:scale(0.5);opacity:0}
+  to{transform:scale(1);opacity:1}
+}

@@ -84,18 +84,20 @@ def signup_student():
     if request.method == "POST":
         student_number = (request.form.get("student_number") or "").strip()
         full_name = (request.form.get("full_name") or "").strip()
+        email = (request.form.get("email") or "").strip()
         department = (request.form.get("department") or "").strip()
         program = (request.form.get("program") or "").strip()
         password = request.form.get("password") or ""
         confirm = request.form.get("confirm_password") or ""
 
         # Basic validation
-        if not student_number or not full_name or not department or not program or not password or not confirm:
+        if not student_number or not full_name or not email or not department or not program or not password or not confirm:
             flash("All fields are required.", "error")
             return render_template(
                 "auth/signup_student.html",
                 student_number=student_number,
                 full_name=full_name,
+                email=email,
                 department=department,
                 program=program,
             )
@@ -106,6 +108,7 @@ def signup_student():
                 "auth/signup_student.html",
                 student_number=student_number,
                 full_name=full_name,
+                email=email,
                 department=department,
                 program=program,
             )
@@ -116,6 +119,7 @@ def signup_student():
                 "auth/signup_student.html",
                 student_number=student_number,
                 full_name=full_name,
+                email=email,
                 department=department,
                 program=program,
             )
@@ -130,6 +134,22 @@ def signup_student():
                 "auth/signup_student.html",
                 student_number=student_number,
                 full_name=full_name,
+                email=email,
+                department=department,
+                program=program,
+            )
+
+        # Ensure email is unique
+        existing_email = db.session.execute(
+            db.select(User).where(User.email == email)
+        ).scalar_one_or_none()
+        if existing_email:
+            flash("That email is already registered.", "error")
+            return render_template(
+                "auth/signup_student.html",
+                student_number=student_number,
+                full_name=full_name,
+                email=email,
                 department=department,
                 program=program,
             )
@@ -139,6 +159,7 @@ def signup_student():
             role=Role.STUDENT.value,
             student_number=student_number,
             full_name=full_name,
+            email=email,
             department=department,
             program=program,
             username=None,
@@ -164,18 +185,24 @@ def signup_instructor():
 
     if request.method == "POST":
         faculty_name = (request.form.get("office_name") or "").strip()
+        course_code = (request.form.get("course_code") or "").strip()
+        course_name = (request.form.get("course_name") or "").strip()
         username = (request.form.get("username") or "").strip()
         full_name = (request.form.get("full_name") or "").strip()
+        email = (request.form.get("email") or "").strip()
         password = request.form.get("password") or ""
         confirm = request.form.get("confirm_password") or ""
 
-        if not faculty_name or not username or not full_name or not password or not confirm:
+        if not faculty_name or not course_code or not course_name or not username or not full_name or not email or not password or not confirm:
             flash("All fields are required.", "error")
             return render_template(
                 "auth/signup_instructor.html",
                 office_name=faculty_name,
+                course_code=course_code,
+                course_name=course_name,
                 username=username,
                 full_name=full_name,
+                email=email,
             )
 
         if password != confirm:
@@ -183,8 +210,11 @@ def signup_instructor():
             return render_template(
                 "auth/signup_instructor.html",
                 office_name=faculty_name,
+                course_code=course_code,
+                course_name=course_name,
                 username=username,
                 full_name=full_name,
+                email=email,
             )
 
         if len(password) < 6:
@@ -192,8 +222,11 @@ def signup_instructor():
             return render_template(
                 "auth/signup_instructor.html",
                 office_name=faculty_name,
+                course_code=course_code,
+                course_name=course_name,
                 username=username,
                 full_name=full_name,
+                email=email,
             )
 
         # Username must be unique across office users
@@ -205,8 +238,27 @@ def signup_instructor():
             return render_template(
                 "auth/signup_instructor.html",
                 office_name=faculty_name,
+                course_code=course_code,
+                course_name=course_name,
                 username=username,
                 full_name=full_name,
+                email=email,
+            )
+
+        # Ensure email is unique
+        existing_email = db.session.execute(
+            db.select(User).where(User.email == email)
+        ).scalar_one_or_none()
+        if existing_email:
+            flash("That email is already registered.", "error")
+            return render_template(
+                "auth/signup_instructor.html",
+                office_name=faculty_name,
+                course_code=course_code,
+                course_name=course_name,
+                username=username,
+                full_name=full_name,
+                email=email,
             )
 
         # Faculty: create or reuse by name
@@ -216,11 +268,28 @@ def signup_instructor():
         if not faculty:
             faculty = Faculty(name=faculty_name)
             db.session.add(faculty)
+            db.session.flush()
+
+        # Create course directly linked to faculty
+        from ...models import Course
+        course = db.session.execute(
+            db.select(Course).where(Course.code == course_code)
+        ).scalar_one_or_none()
+        
+        if not course:
+            course = Course(
+                code=course_code,
+                name=course_name,
+                faculty_id=faculty.id
+            )
+            db.session.add(course)
+            db.session.flush()
 
         user = User(
             role=Role.FACULTY.value,
             username=username,
             full_name=full_name,
+            email=email,
             student_number=None,
         )
         user.set_password(password)
@@ -228,16 +297,23 @@ def signup_instructor():
         db.session.flush()  # Ensure user has ID without committing
 
         # Create faculty assignment
-        from ...models import FacultyAssignment
+        from ...models import FacultyAssignment, InstructorCourse
         assignment = FacultyAssignment(
             user_id=user.id,
             faculty_id=faculty.id
         )
         db.session.add(assignment)
-        _commit_with_retry()  # Single commit for all three operations
+
+        # Create course assignment
+        course_assignment = InstructorCourse(
+            user_id=user.id,
+            course_id=course.id
+        )
+        db.session.add(course_assignment)
+        _commit_with_retry()  # Single commit for all operations
 
         login_user(user)
-        flash("Instructor account created. You can now manage clearances for your office.", "success")
+        flash("Instructor account created. You can now manage clearances for your course.", "success")
         return redirect(url_for("admin.dashboard"))
 
     return render_template("auth/signup_instructor.html")

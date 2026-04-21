@@ -7,7 +7,7 @@ bp = Blueprint("student", __name__, url_prefix="/student")
 
 from ...extensions import db
 from ...models import ClearanceStatus, Faculty, User
-from ...utils.qr import name_to_png_bytes
+from ...utils.qr import token_to_png_bytes, make_student_token
 
 
 
@@ -16,12 +16,13 @@ from ...utils.qr import name_to_png_bytes
 def qr_png():
     _require_student()
     try:
-        png = name_to_png_bytes(current_user.full_name)
+        token = make_student_token(current_user)
+        png = token_to_png_bytes(token)
         return send_file(
             io.BytesIO(png),
             mimetype="image/png",
             as_attachment=False,
-            download_name="student-name-qr.png",
+            download_name="student-token-qr.png",
         )
     except Exception as e:
         import traceback
@@ -40,30 +41,19 @@ def _require_student():
 def dashboard():
     _require_student()
     
-    # Get all clearances for this student with faculty and instructor info
+    # Get all clearances for this student with course and faculty info
     clearances_data = []
+    from ...models import Course
     clearances = db.session.execute(
-        db.select(ClearanceStatus, Faculty)
-        .join(Faculty, ClearanceStatus.faculty_id == Faculty.id)
+        db.select(ClearanceStatus, Course, Faculty)
+        .join(Course, ClearanceStatus.course_id == Course.id)
+        .join(Faculty, Course.faculty_id == Faculty.id)
         .where(ClearanceStatus.student_id == current_user.id)
-        .order_by(Faculty.name.asc())
+        .order_by(Course.name.asc())
     ).all()
     
-    for cs, faculty in clearances:
-        # Get all instructors for this faculty
-        from ...models import FacultyAssignment
-        instructors = db.session.execute(
-            db.select(User)
-            .join(FacultyAssignment, User.id == FacultyAssignment.user_id)
-            .where(
-                User.role == "faculty",
-                FacultyAssignment.faculty_id == faculty.id,
-            )
-        ).scalars().all()
-        
-        # Format instructors as comma-separated string
-        instructor_names = ", ".join([instr.full_name for instr in instructors]) if instructors else None
-        clearances_data.append((cs, faculty, instructor_names))
+    for cs, course, faculty in clearances:
+        clearances_data.append((cs, course, faculty))
     
     return render_template("student/dashboard.html", clearances=clearances_data)
 
