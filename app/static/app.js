@@ -39,13 +39,24 @@ function setupCopyButtons() {
 async function verifyTokenViaJson(token) {
   const url = window.CHECK8_VERIFY_JSON_URL;
   if (!url) return null;
+  
+  // Get selected course from the selector
+  const courseSelector = document.getElementById("courseSelector");
+  const courseId = courseSelector ? courseSelector.value : null;
+  
+  if (!courseId) {
+    const warning = document.getElementById("courseWarning");
+    if (warning) warning.style.display = "inline";
+    throw new Error("Please select a course first");
+  }
+  
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token }),
+    body: JSON.stringify({ token, course_id: parseInt(courseId) }),
   });
   const data = await res.json().catch(() => null);
-  if (!res.ok) throw new Error((data && data.error) || "Verify failed");
+  if (!res.ok) throw new Error((data && data.error) || "Verification failed");
   return data;
 }
 
@@ -93,13 +104,13 @@ function setupQrScanner() {
           <div style="font-size: 0.85em; color: #bfa074; margin-bottom: 0.5rem;">ID: ${studentNo}</div>
           ${note ? `<div style="font-size: 0.8em; color: #bfa074; margin-bottom: 0.5rem; font-style: italic;">${note}</div>` : ''}
           <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; margin-top: 0.75rem;">
-            <button id="btnApprove" class="btn btn--sm" style="background: #22c55e; border: none; color: white; cursor: pointer; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.85em; font-weight: 600;" data-student="${studentId}" data-course="${courseId}">
+            <button id="btnApprove" class="btn btn--sm" style="background: #22c55e; border: none; color: white; cursor: pointer; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.85em; font-weight: 600;" data-student="${studentId}" data-course="${courseId}" data-note="${note || ''}">
               ✓ Approve
             </button>
-            <button id="btnPending" class="btn btn--sm" style="background: #ff9800; border: none; color: white; cursor: pointer; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.85em; font-weight: 600;" data-student="${studentId}" data-course="${courseId}">
+            <button id="btnPending" class="btn btn--sm" style="background: #ff9800; border: none; color: white; cursor: pointer; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.85em; font-weight: 600;" data-student="${studentId}" data-course="${courseId}" data-note="${note || ''}">
               ◉ Pending
             </button>
-            <button id="btnDecline" class="btn btn--sm" style="background: #ef4444; border: none; color: white; cursor: pointer; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.85em; font-weight: 600;" data-student="${studentId}" data-course="${courseId}">
+            <button id="btnDecline" class="btn btn--sm" style="background: #ef4444; border: none; color: white; cursor: pointer; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.85em; font-weight: 600;" data-student="${studentId}" data-course="${courseId}" data-note="${note || ''}">
               ✕ Decline
             </button>
           </div>
@@ -117,22 +128,22 @@ function setupQrScanner() {
     
     if (btnApprove) {
       btnApprove.addEventListener("click", () => {
-        updateStudentStatus(studentId, courseId, "cleared", btnApprove);
+        updateStudentStatus(studentId, courseId, "cleared", btnApprove, note);
       });
     }
     if (btnPending) {
       btnPending.addEventListener("click", () => {
-        updateStudentStatus(studentId, courseId, "pending", btnPending);
+        updateStudentStatus(studentId, courseId, "pending", btnPending, note);
       });
     }
     if (btnDecline) {
       btnDecline.addEventListener("click", () => {
-        updateStudentStatus(studentId, courseId, "blocked", btnDecline);
+        updateStudentStatus(studentId, courseId, "blocked", btnDecline, note);
       });
     }
   }
 
-  async function updateStudentStatus(studentId, courseId, newState, buttonEl) {
+  async function updateStudentStatus(studentId, courseId, newState, buttonEl, note) {
     try {
       // Disable all buttons and show loading state
       if (buttonEl) {
@@ -140,14 +151,21 @@ function setupQrScanner() {
         buttonEl.style.opacity = "0.6";
       }
 
+      const formData = new URLSearchParams({
+        student_id: studentId,
+        course_id: courseId,
+        state: newState
+      });
+      
+      // Include note if provided
+      if (note) {
+        formData.append("note", note);
+      }
+
       const response = await fetch("/faculty/set-status", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          student_id: studentId,
-          course_id: courseId,
-          state: newState
-        })
+        body: formData
       });
       
       if (response.ok) {

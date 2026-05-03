@@ -1,11 +1,25 @@
 {% extends "base.html" %}
-{% block title %}Verify QR • CHECK8{% endblock %}
+{% block title %}Clearance Validation • CHECK8{% endblock %}
 
 {% block content %}
   <div class="grid">
     <section class="card">
-      <h1 class="h1">Verify Student QR</h1>
-      <p class="muted">Scan a QR code (camera) or paste the token string.</p>
+      <h1 class="h1">Clearance Validation</h1>
+      <p class="muted">Select a course, then scan a QR code (camera) or paste the token string.</p>
+
+      <!-- Course Selection -->
+      <div style="margin-bottom: 2rem; padding: 1.5rem; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.5rem;">
+        <label class="label">Select Course to Verify:</label>
+        <select id="courseSelector" class="input" required>
+          <option value="">-- Choose a course --</option>
+          {% for course in assigned_courses %}
+            <option value="{{ course.id }}">{{ course.code }} - {{ course.name }}</option>
+          {% endfor %}
+        </select>
+        <div id="courseWarning" class="muted small" style="margin-top: 0.5rem; color: #dc2626; display: none;">
+           Please select a course to verify students
+        </div>
+      </div>
 
       <div class="split">
         <div>
@@ -13,20 +27,20 @@
           
           <div id="cameraControls" class="cameraControls" style="display: none; margin-bottom: 1rem; gap: 0.5rem;">
             <button id="toggleCamera" class="btn btn--sm" type="button">Stop Camera</button>
-            <button id="toggleTorch" class="btn btn--sm btn--ghost" type="button" style="display: none;">💡 Torch</button>
+            <button id="toggleTorch" class="btn btn--sm btn--ghost" type="button" style="display: none;">Torch</button>
           </div>
 
           <div id="qrReader" class="qrReader" style="min-height: 320px; display: flex; align-items: center; justify-content: center;">
             <div style="text-align: center; color: #bfa074;">
-              <div style="font-size: 2em; margin-bottom: 0.5rem;">📷</div>
+              <div style="font-size: 2em; margin-bottom: 0.5rem;"></div>
               <div style="margin-bottom: 1rem;">Loading camera...</div>
               <div style="font-size: 0.875rem;">If this takes too long, use Paste mode below</div>
             </div>
           </div>
           
           <div id="cameraStatus" class="muted small" style="margin-top: 0.5rem; text-align: center;">
-            <span id="cameraLoading" style="display: none;">🔄 Initializing camera...</span>
-            <span id="cameraReady" style="display: none;">✓ Camera ready</span>
+            <span id="cameraLoading" style="display: none;"> Initializing camera...</span>
+            <span id="cameraReady" style="display: none;">Camera ready</span>
             <span id="cameraError" style="display: none; color: #dc2626;"></span>
           </div>
 
@@ -39,6 +53,7 @@
           <h2 class="h2">Paste token</h2>
           <form id="pasteTokenForm" class="form" onsubmit="handlePasteTokenSubmit(event)">
             <textarea id="tokenInput" class="input input--mono" name="token" rows="5" placeholder="Paste token here...">{{ token or "" }}</textarea>
+            <input type="hidden" id="courseIdInput" name="course_id" value="">
             <button class="btn" type="submit">Verify</button>
           </form>
         </div>
@@ -61,6 +76,32 @@
 
   <script>
     console.log('Verify page loaded');
+    
+    // Add course selector validation
+    const courseSelector = document.getElementById("courseSelector");
+    const cameraDiv = document.getElementById("qrReader");
+    const cameraControls = document.getElementById("cameraControls");
+    
+    function updateCameraAvailability() {
+      const courseSelected = courseSelector && courseSelector.value;
+      const warning = document.getElementById("courseWarning");
+      
+      if (!courseSelected) {
+        if (cameraDiv) cameraDiv.style.opacity = "0.5";
+        if (cameraDiv) cameraDiv.style.pointerEvents = "none";
+        if (warning) warning.style.display = "inline";
+      } else {
+        if (cameraDiv) cameraDiv.style.opacity = "1";
+        if (cameraDiv) cameraDiv.style.pointerEvents = "auto";
+        if (warning) warning.style.display = "none";
+      }
+    }
+    
+    if (courseSelector) {
+      courseSelector.addEventListener("change", updateCameraAvailability);
+      // Initial check
+      updateCameraAvailability();
+    }
   </script>
   <script src="{{ url_for('static', filename='html5-qrcode.min.js') }}"></script>
   <script>

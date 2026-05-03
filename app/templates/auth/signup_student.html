@@ -31,27 +31,16 @@
       />
 
       <label class="label" for="email">Institutional Email</label>
-      <input
-        id="email"
-        name="email"
-        type="email"
-        class="input"
-        placeholder="e.g. 20xxxxxxx@gordoncollege.edu.ph"
-        value="{{ email or '' }}"
-        required
-      />
+      <div class="input-group">
+        <input id="email_username" class="input-group__input" type="text" placeholder="e.g. 20xxxxxxx" required />
+        <span class="input-group__suffix">@gordoncollege.edu.ph</span>
+      </div>
+      <input id="email" name="email" type="hidden" value="{{ email or '' }}" />
 
       <label class="label" for="department">Department</label>
       <select id="department" name="department" class="input" required>
         <option value="">Select Department</option>
         <option value="College of Computer Studies" {% if department == "College of Computer Studies" %}selected{% endif %}>College of Computer Studies</option>
-        <option value="College of Engineering" {% if department == "College of Engineering" %}selected{% endif %}>College of Engineering</option>
-        <option value="College of Business Administration" {% if department == "College of Business Administration" %}selected{% endif %}>College of Business Administration</option>
-        <option value="College of Arts and Sciences" {% if department == "College of Arts and Sciences" %}selected{% endif %}>College of Arts and Sciences</option>
-        <option value="College of Education" {% if department == "College of Education" %}selected{% endif %}>College of Education</option>
-        <option value="College of Nursing" {% if department == "College of Nursing" %}selected{% endif %}>College of Nursing</option>
-        <option value="College of Law" {% if department == "College of Law" %}selected{% endif %}>College of Law</option>
-        <option value="College of Medicine" {% if department == "College of Medicine" %}selected{% endif %}>College of Medicine</option>
       </select>
 
       <label class="label" for="program">Program</label>
@@ -59,19 +48,6 @@
         <option value="">Select Program</option>
         <option value="Bachelor of Science in Computer Science" {% if program == "Bachelor of Science in Computer Science" %}selected{% endif %}>Bachelor of Science in Computer Science</option>
         <option value="Bachelor of Science in Information Technology" {% if program == "Bachelor of Science in Information Technology" %}selected{% endif %}>Bachelor of Science in Information Technology</option>
-        <option value="Bachelor of Science in Software Engineering" {% if program == "Bachelor of Science in Software Engineering" %}selected{% endif %}>Bachelor of Science in Software Engineering</option>
-        <option value="Bachelor of Science in Civil Engineering" {% if program == "Bachelor of Science in Civil Engineering" %}selected{% endif %}>Bachelor of Science in Civil Engineering</option>
-        <option value="Bachelor of Science in Mechanical Engineering" {% if program == "Bachelor of Science in Mechanical Engineering" %}selected{% endif %}>Bachelor of Science in Mechanical Engineering</option>
-        <option value="Bachelor of Science in Electrical Engineering" {% if program == "Bachelor of Science in Electrical Engineering" %}selected{% endif %}>Bachelor of Science in Electrical Engineering</option>
-        <option value="Bachelor of Science in Business Administration" {% if program == "Bachelor of Science in Business Administration" %}selected{% endif %}>Bachelor of Science in Business Administration</option>
-        <option value="Bachelor of Science in Accountancy" {% if program == "Bachelor of Science in Accountancy" %}selected{% endif %}>Bachelor of Science in Accountancy</option>
-        <option value="Bachelor of Arts in Communication" {% if program == "Bachelor of Arts in Communication" %}selected{% endif %}>Bachelor of Arts in Communication</option>
-        <option value="Bachelor of Arts in Psychology" {% if program == "Bachelor of Arts in Psychology" %}selected{% endif %}>Bachelor of Arts in Psychology</option>
-        <option value="Bachelor of Elementary Education" {% if program == "Bachelor of Elementary Education" %}selected{% endif %}>Bachelor of Elementary Education</option>
-        <option value="Bachelor of Secondary Education" {% if program == "Bachelor of Secondary Education" %}selected{% endif %}>Bachelor of Secondary Education</option>
-        <option value="Bachelor of Science in Nursing" {% if program == "Bachelor of Science in Nursing" %}selected{% endif %}>Bachelor of Science in Nursing</option>
-        <option value="Juris Doctor" {% if program == "Juris Doctor" %}selected{% endif %}>Juris Doctor</option>
-        <option value="Doctor of Medicine" {% if program == "Doctor of Medicine" %}selected{% endif %}>Doctor of Medicine</option>
       </select>
 
       <label class="label" for="password">Password</label>
@@ -104,5 +80,12 @@
       <a href="{{ url_for('auth.login') }}">Back to login</a>.
     </div>
   </div>
+  <script>
+    document.querySelector('.form').addEventListener('submit', function(e) {
+      const emailUsername = document.getElementById('email_username').value;
+      const emailField = document.getElementById('email');
+      emailField.value = emailUsername + '@gordoncollege.edu.ph';
+    });
+  </script>
 {% endblock %}
 

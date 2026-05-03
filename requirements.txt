@@ -4,3 +4,4 @@ Flask-Login==0.6.3
 python-dotenv==1.0.1
 qrcode==7.4.2
 Pillow==12.1.1
+reportlab==4.0.9

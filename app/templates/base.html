@@ -23,8 +23,7 @@
             <nav class="nav">
                 {% if current_user.is_authenticated %} {% if current_user.is_student %}
                 <a class="nav__link" href="{{ url_for('student.dashboard') }}">Dashboard</a> {% else %}
-                <a class="nav__link" href="{{ url_for('admin.dashboard') }}">Faculty Dashboard</a>
-                <a class="nav__link" href="{{ url_for('admin.verify') }}">Verify QR</a> {% endif %}
+                <a class="nav__link" href="{{ url_for('admin.dashboard') }}">Faculty Dashboard</a> {% endif %}
                 <form class="nav__logout" method="post" action="{{ url_for('auth.logout') }}">
                     <button class="btn btn--ghost" type="submit">Logout</button>
                 </form>
@@ -44,8 +43,7 @@
     </main>
 
     <footer class="footer">
-        <div class="container footer__inner">
-            <div>CHECK8 starter • Flask + QR</div>
+        
         </div>
     </footer>
 </body>

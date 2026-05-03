@@ -2,17 +2,14 @@
 <div class="card">
 
     <h1 class="h1">Login</h1>
-    <p class="muted">Choose Student or Faculty login.</p>
+    <p class="muted">Enter your institutional email and password.</p>
 
     <form method="post" class="form">
-        <label class="label" for="login_as">Login as</label>
-        <select id="login_as" name="login_as" class="input">
-        <option value="student">Student</option>
-        <option value="faculty">Faculty/Officers</option>
-      </select>
-
-        <label class="label" for="identifier" data-label="identifierLabel">Student Number</label>
-        <input id="identifier" name="identifier" class="input" placeholder="e.g. 20XXXXXxx" autocomplete="username" required />
+        <label class="label" for="email">Institutional Email</label>
+        <div style="position: relative;">
+          <input id="email" name="email" type="text" class="input" placeholder="e.g. 20xxxxxxx" required style="padding-right: 220px;" />
+          <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #666; font-size: 14px;">@gordoncollege.edu.ph</span>
+        </div>
 
         <label class="label" for="password">Password</label>
         <input id="password" name="password" type="password" class="input" autocomplete="current-password" required />
@@ -22,6 +19,14 @@
         Sign up
       </a>
     </form>
+    <script>
+      document.querySelector('form').addEventListener('submit', function(e) {
+        let emailField = document.getElementById('email');
+        if (emailField.value && !emailField.value.includes('@')) {
+          emailField.value = emailField.value + '@gordoncollege.edu.ph';
+        }
+      });
+    </script>
 
 </div>
 {% endblock %}

@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+{% block title %}{{ group.name }} • CHECK8{% endblock %}
+
+{% block content %}
+  <section class="card">
+    <!-- Header -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2.5rem;">
+      <div>
+        <h1 class="h1">{{ group.name }}</h1>
+        <p class="muted" style="margin: 0.5rem 0 0.25rem 0;">{{ group.faculty.name }}</p>
+        {% if group.description %}
+          <p class="muted" style="margin: 0; font-size: 0.95rem;">{{ group.description }}</p>
+        {% endif %}
+      </div>
+      <a href="{{ url_for('admin.list_groups') }}" class="btn btn--ghost">Back to Groups</a>
+    </div>
+
+    <!-- Add Students Section -->
+    <div style="background: linear-gradient(135deg, #fff9f0 0%, #ffe8d1 100%); border: 1px solid rgba(255, 152, 0, 0.3); border-radius: 0.75rem; padding: 2rem; margin-bottom: 2.5rem;">
+      <h2 class="h2" style="margin-top: 0; color: var(--accent-dark);">Add Students to Class</h2>
+      <p class="muted" style="margin-bottom: 1.5rem;">Select students from the list below to add them to this class.</p>
+      
+      <div style="display: grid; grid-template-columns: 1fr 320px; gap: 2rem; margin-bottom: 1.5rem;">
+        <!-- Available Students List -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <label class="label" style="margin-bottom: 0;">Available Students</label>
+            {% if available_students %}
+              <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 500; font-size: 0.9rem; color: var(--accent);">
+                <input type="checkbox" id="selectAllCheckbox" style="width: 18px; height: 18px; cursor: pointer;" />
+                Select All
+              </label>
+            {% endif %}
+          </div>
+          <input 
+            type="text" 
+            id="filterInput" 
+            class="input" 
+            placeholder="Search by name or student number..."
+            style="margin-bottom: 1rem;"
+          />
+          
+          <div id="studentsList" style="border: 1px solid rgba(255, 152, 0, 0.2); border-radius: 0.5rem; max-height: 400px; overflow-y: auto; background: white;">
+            {% if available_students %}
+              {% for student in available_students %}
+                <div class="student-row" data-student-id="{{ student.id }}" data-search="{{ student.full_name|lower }} {{ student.student_number|lower }}" style="padding: 0.875rem; border-bottom: 1px solid rgba(255, 152, 0, 0.15); display: flex; align-items: center; cursor: pointer; transition: background 0.2s;" 
+                     onclick="toggleStudent({{ student.id }}, '{{ student.full_name|e }}', '{{ student.student_number|e }}')">
+                  <input type="checkbox" class="student-checkbox" style="margin-right: 0.75rem; cursor: pointer; width: 18px; height: 18px;" 
+                    onchange="toggleStudent({{ student.id }}, '{{ student.full_name|e }}', '{{ student.student_number|e }}')" 
+                    onclick="event.stopPropagation();" />
+                  <div style="flex: 1;">
+                    <div style="font-weight: 500; color: var(--text);">{{ student.full_name }}</div>
+                    <div style="font-size: 0.85rem; color: var(--muted);">{{ student.student_number }}</div>
+                  </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div style="padding: 1.5rem; text-align: center; color: var(--muted); font-size: 0.9rem;">
+                No available students
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Selected Students Panel -->
+        <div>
+          <label class="label">Selected</label>
+          <div id="selectedStudentsList" style="border: 1px solid rgba(255, 152, 0, 0.2); border-radius: 0.5rem; padding: 1rem; max-height: 400px; overflow-y: auto; background: white; min-height: 200px;">
+            <p class="muted small" id="selectedPlaceholder" style="margin: 0; text-align: center; padding-top: 4.5rem;">No students selected</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit Form -->
+      <form method="post" action="{{ url_for('admin.add_students_to_group') }}" id="addStudentsForm">
+        <input type="hidden" name="group_id" value="{{ group.id }}" />
+        <input type="hidden" name="student_ids" id="studentIdsInput" />
+        <button type="submit" class="btn" id="submitBtn" disabled style="opacity: 0.5; cursor: not-allowed; width: 100%;">Add Selected Students</button>
+      </form>
+    </div>
+
+    <!-- Group Members Section -->
+    <div>
+      <h2 class="h2" style="margin-bottom: 1.5rem;"> Class Members <span class="badge" style="margin-left: 0.75rem; background: #ffe0b2; color: #e65100;">{{ members|length }}</span></h2>
+
+      {% if members %}
+        <div style="overflow-x: auto;">
+          <table class="table" style="width: 100%;">
+            <thead>
+              <tr>
+                <th>Student No.</th>
+                <th>Name</th>
+                <th>Department</th>
+                <th>Program</th>
+                {% for course in assigned_courses %}
+                  <th style="text-align: center;">{{ course.code }}</th>
+                {% endfor %}
+                <th>Added</th>
+                <th style="text-align: center;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for member_data in members %}
+                {% set member = member_data.member %}
+                {% set student = member_data.student %}
+                {% set clearance_statuses = member_data.clearance_statuses %}
+                <tr>
+                  <td data-label="Student No."><code style="background: #f3f4f6; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">{{ student.student_number }}</code></td>
+                  <td data-label="Name">{{ student.full_name }}</td>
+                  <td data-label="Department">{{ student.department or '—' }}</td>
+                  <td data-label="Program">{{ student.program or '—' }}</td>
+                  
+                  {% for course in assigned_courses %}
+                    <td data-label="{{ course.code }}" style="text-align: center;">
+                      {% set status = clearance_statuses|selectattr('1.id', 'equalto', course.id)|first %}
+                      {% if status %}
+                        {% set cs, course_obj = status %}
+                        {% if cs.state == 'pending' %}
+                          <span class="badge badge--pending">Pending</span>
+                        {% elif cs.state == 'cleared' %}
+                          <span class="badge badge--cleared">Approved</span>
+                        {% elif cs.state == 'blocked' %}
+                          <span class="badge badge--blocked">Rejected</span>
+                        {% endif %}
+                      {% else %}
+                        <span class="badge" style="background: #f3f4f6; color: #6b7280;">—</span>
+                      {% endif %}
+                    </td>
+                  {% endfor %}
+                  <td data-label="Added" class="muted small">{{ member.added_at.strftime('%y-%m-%d') }}</td>
+                  <td data-label="Action" style="text-align: center;">
+                    <form method="post" action="{{ url_for('admin.remove_student_from_group', group_id=group.id, student_id=student.id) }}" style="display: inline;" onsubmit="return confirm('Remove this student?');">
+                      <button type="submit" class="btn btn--sm btn--ghost" style="color: #dc2626; font-size: 0.85rem;">Remove</button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div style="padding: 2.5rem; text-align: center; background: linear-gradient(135deg, #fff9f0 0%, #ffe8d1 100%); border: 2px dashed rgba(255, 152, 0, 0.2); border-radius: 0.75rem;">
+          <p style="font-size: 1rem; color: var(--text); margin: 0; font-weight: 500;">No students in this group yet</p>
+          <p class="muted" style="margin: 0.5rem 0 0;">Add students using the form above.</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Quick Actions -->
+    <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e5e7eb;">
+      <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <a href="{{ url_for('admin.list_groups') }}" class="btn btn--ghost">View All Groups</a>
+        <a href="{{ url_for('admin.dashboard') }}" class="btn btn--ghost">Dashboard</a>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    let selectedStudents = {}; // { id: {id, name, student_number} }
+
+    const filterInput = document.getElementById('filterInput');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const selectedList = document.getElementById('selectedStudentsList');
+    const selectedPlaceholder = document.getElementById('selectedPlaceholder');
+    const studentIdsInput = document.getElementById('studentIdsInput');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // Filter students
+    if (filterInput) {
+      filterInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        const rows = document.querySelectorAll('.student-row');
+        
+        rows.forEach(row => {
+          const searchText = row.getAttribute('data-search');
+          if (searchText.includes(query)) {
+            row.style.display = '';
+          } else {
+            row.style.display = 'none';
+          }
+        });
+      });
+    }
+
+    // Select/Deselect all visible students
+    if (selectAllCheckbox) {
+      selectAllCheckbox.addEventListener('change', function() {
+        const rows = document.querySelectorAll('.student-row');
+        rows.forEach(row => {
+          if (row.style.display !== 'none') {
+            const studentId = parseInt(row.getAttribute('data-student-id'));
+            const checkbox = row.querySelector('.student-checkbox');
+            const fullName = row.querySelector('div > div:first-child').textContent;
+            const studentNumber = row.querySelector('div > div:last-child').textContent;
+
+            if (this.checked) {
+              // Add to selected
+              if (!(studentId in selectedStudents)) {
+                selectedStudents[studentId] = { id: studentId, name: fullName, student_number: studentNumber };
+                checkbox.checked = true;
+                row.style.background = '#ffe8d1';
+              }
+            } else {
+              // Remove from selected
+              if (studentId in selectedStudents) {
+                delete selectedStudents[studentId];
+                checkbox.checked = false;
+                row.style.background = 'white';
+              }
+            }
+          }
+        });
+        updateSelectedList();
+      });
+    }
+
+    // Toggle student selection
+    function toggleStudent(id, name, studentNumber) {
+      const row = document.querySelector(`[data-student-id="${id}"]`);
+      const checkbox = row.querySelector('.student-checkbox');
+      
+      if (id in selectedStudents) {
+        delete selectedStudents[id];
+        row.style.background = 'white';
+        checkbox.checked = false;
+      } else {
+        selectedStudents[id] = { id, name, student_number: studentNumber };
+        row.style.background = '#ffe8d1';
+        checkbox.checked = true;
+      }
+      
+      updateSelectedList();
+    }
+
+    // Update the selected students display
+    function updateSelectedList() {
+      const count = Object.keys(selectedStudents).length;
+
+      if (count === 0) {
+        selectedList.innerHTML = '<p class="muted small" id="selectedPlaceholder" style="margin: 0; text-align: center; padding-top: 4.5rem;">No students selected</p>';
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.5';
+        submitBtn.style.cursor = 'not-allowed';
+      } else {
+        selectedList.innerHTML = Object.values(selectedStudents)
+          .map(s => `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #ffe8d1; border: 1px solid rgba(255, 152, 0, 0.3); border-radius: 0.25rem; margin-bottom: 0.5rem;">
+              <div style="flex: 1;">
+                <div style="font-weight: 500; font-size: 0.9rem; color: #1f2937;">${s.name}</div>
+                <div style="font-size: 0.8rem; color: #666;">${s.student_number}</div>
+              </div>
+              <button type="button" onclick="toggleStudent(${s.id}, '${s.name.replace(/'/g, "\\'")}', '${s.student_number.replace(/'/g, "\\'")}'); event.preventDefault();" style="background: none; border: none; cursor: pointer; color: #dc2626; font-weight: bold; padding: 0.25rem; font-size: 1.2rem; line-height: 1;">✕</button>
+            </div>
+          `)
+          .join('');
+        
+        // Update hidden input with student IDs
+        studentIdsInput.value = Object.keys(selectedStudents).join(',');
+        
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+        submitBtn.style.cursor = 'pointer';
+      }
+    }
+  </script>
+
+  <style>
+    .label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #1f2937;
+    }
+
+    .student-row:hover {
+      background-color: rgba(255, 152, 0, 0.05);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.35rem 0.75rem;
+      border-radius: 0.25rem;
+      font-weight: 600;
+      font-size: 0.75rem;
+    }
+
+    .badge--pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .badge--cleared {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .badge--blocked {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    /* Responsive Table */
+    @media (max-width: 1024px) {
+      .table {
+        font-size: 0.875rem;
+      }
+
+      .table th,
+      .table td {
+        padding: 0.75rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      div[style*="grid-template-columns: 1fr 320px"] {
+        grid-template-columns: 1fr !important;
+        gap: 1.5rem !important;
+      }
+
+      .table {
+        font-size: 0.875rem;
+        overflow: visible;
+        display: block;
+      }
+
+      .table thead {
+        display: none;
+      }
+
+      .table tbody {
+        display: block;
+      }
+
+      .table tr {
+        display: block;
+        background: #ffffff;
+        margin-bottom: 1.25rem;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        border: 1px solid #e5e7eb;
+      }
+
+      .table tr:hover {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      }
+
+      .table td {
+        display: grid;
+        grid-template-columns: 100px 1fr;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #f3f4f6;
+        align-items: start;
+      }
+
+      .table td:before {
+        content: attr(data-label);
+        font-weight: 700;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        color: #6b7280;
+        letter-spacing: 0.5px;
+      }
+
+      .table td:last-child {
+        border-bottom: none;
+        padding-bottom: 1rem;
+      }
+
+      .table td:nth-child(1) {
+        padding-top: 1rem;
+      }
+    }
+  </style>
+{% endblock %}

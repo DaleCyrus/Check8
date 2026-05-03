@@ -5,7 +5,7 @@ import uuid
 import time
 
 from ...extensions import db
-from ...models import ClearanceState, ClearanceStatus, Faculty, Role, User
+from ...models import ClearanceState, ClearanceStatus, Faculty, Role, User, Semester, Event, EventEnrollment, EventClearance
 
 bp = Blueprint("auth", __name__)
 
@@ -44,19 +44,16 @@ def login():
         return redirect(url_for("auth.home"))
 
     if request.method == "POST":
-        identifier = (request.form.get("identifier") or "").strip()
+        email = (request.form.get("email") or "").strip()
         password = request.form.get("password") or ""
-        login_as = request.form.get("login_as") or "student"
 
-        user = None
-        if login_as == Role.STUDENT.value:
-            user = db.session.execute(
-                db.select(User).where(User.student_number == identifier)
-            ).scalar_one_or_none()
-        else:
-            user = db.session.execute(
-                db.select(User).where(User.username == identifier)
-            ).scalar_one_or_none()
+        # Ensure email has the domain if not already provided
+        if email and not email.endswith("@gordoncollege.edu.ph"):
+            email = email + "@gordoncollege.edu.ph"
+
+        user = db.session.execute(
+            db.select(User).where(User.email == email)
+        ).scalar_one_or_none()
 
         if not user or not user.check_password(password):
             flash("Invalid credentials.", "error")
@@ -93,6 +90,18 @@ def signup_student():
         # Basic validation
         if not student_number or not full_name or not email or not department or not program or not password or not confirm:
             flash("All fields are required.", "error")
+            return render_template(
+                "auth/signup_student.html",
+                student_number=student_number,
+                full_name=full_name,
+                email=email,
+                department=department,
+                program=program,
+            )
+
+        # Validate email domain
+        if not email.endswith("@gordoncollege.edu.ph"):
+            flash("Email must be from @gordoncollege.edu.ph domain.", "error")
             return render_template(
                 "auth/signup_student.html",
                 student_number=student_number,
@@ -169,6 +178,43 @@ def signup_student():
         db.session.add(user)
         _commit_with_retry()
 
+        # Auto-enroll student in default signatories for active semester
+        try:
+            active_semester = db.session.execute(
+                db.select(Semester).where(Semester.is_active == True)
+            ).scalar_one_or_none()
+            
+            if active_semester:
+                # Get all signatory events for the active semester
+                signatory_events = db.session.execute(
+                    db.select(Event).where(
+                        Event.semester_id == active_semester.id,
+                        Event.is_signatory == True
+                    ).order_by(Event.order)
+                ).scalars().all()
+                
+                # Enroll student in each signatory event
+                for event in signatory_events:
+                    # Create event enrollment
+                    enrollment = EventEnrollment(
+                        event_id=event.id,
+                        student_id=user.id
+                    )
+                    db.session.add(enrollment)
+                    
+                    # Create event clearance record
+                    clearance = EventClearance(
+                        event_id=event.id,
+                        student_id=user.id,
+                        state=ClearanceState.PENDING.value
+                    )
+                    db.session.add(clearance)
+                
+                _commit_with_retry()
+        except Exception as e:
+            print(f"Warning: Could not auto-enroll student in signatories: {str(e)}")
+            # Don't fail signup if signatory auto-enrollment fails
+
         # Do not automatically add the student to the faculty's clearance list.
         # Faculty should add students manually via the dashboard search.
         login_user(user)
@@ -187,20 +233,30 @@ def signup_instructor():
         faculty_name = (request.form.get("office_name") or "").strip()
         course_code = (request.form.get("course_code") or "").strip()
         course_name = (request.form.get("course_name") or "").strip()
-        username = (request.form.get("username") or "").strip()
         full_name = (request.form.get("full_name") or "").strip()
         email = (request.form.get("email") or "").strip()
         password = request.form.get("password") or ""
         confirm = request.form.get("confirm_password") or ""
 
-        if not faculty_name or not course_code or not course_name or not username or not full_name or not email or not password or not confirm:
+        if not faculty_name or not course_code or not course_name or not full_name or not email or not password or not confirm:
             flash("All fields are required.", "error")
             return render_template(
                 "auth/signup_instructor.html",
                 office_name=faculty_name,
                 course_code=course_code,
                 course_name=course_name,
-                username=username,
+                full_name=full_name,
+                email=email,
+            )
+
+        # Validate email domain
+        if not email.endswith("@gordoncollege.edu.ph"):
+            flash("Email must be from @gordoncollege.edu.ph domain.", "error")
+            return render_template(
+                "auth/signup_instructor.html",
+                office_name=faculty_name,
+                course_code=course_code,
+                course_name=course_name,
                 full_name=full_name,
                 email=email,
             )
@@ -212,7 +268,6 @@ def signup_instructor():
                 office_name=faculty_name,
                 course_code=course_code,
                 course_name=course_name,
-                username=username,
                 full_name=full_name,
                 email=email,
             )
@@ -224,23 +279,6 @@ def signup_instructor():
                 office_name=faculty_name,
                 course_code=course_code,
                 course_name=course_name,
-                username=username,
-                full_name=full_name,
-                email=email,
-            )
-
-        # Username must be unique across office users
-        existing = db.session.execute(
-            db.select(User).where(User.username == username)
-        ).scalar_one_or_none()
-        if existing:
-            flash("That username is already taken.", "error")
-            return render_template(
-                "auth/signup_instructor.html",
-                office_name=faculty_name,
-                course_code=course_code,
-                course_name=course_name,
-                username=username,
                 full_name=full_name,
                 email=email,
             )
@@ -256,7 +294,6 @@ def signup_instructor():
                 office_name=faculty_name,
                 course_code=course_code,
                 course_name=course_name,
-                username=username,
                 full_name=full_name,
                 email=email,
             )
@@ -284,6 +321,9 @@ def signup_instructor():
             )
             db.session.add(course)
             db.session.flush()
+
+        # Generate username from email
+        username = email.split('@')[0]
 
         user = User(
             role=Role.FACULTY.value,

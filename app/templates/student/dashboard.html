@@ -27,14 +27,16 @@
             <thead>
                 <tr>
                     <th>Course</th>
+                    <th>Instructor</th>
                     <th>Status</th>
                     <th>Note</th>
                 </tr>
             </thead>
             <tbody>
-                {% for cs, course, faculty in clearances %}
+                {% for cs, course, faculty, instructor_names in clearances %}
                 <tr>
                     <td><strong>{{ course.code }} - {{ course.name }}</strong></td>
+                    <td>{{ instructor_names }}</td>
                     <td>
                         {% if cs.state == 'pending' %}
                             <span class="badge badge--pending">Pending</span>
@@ -51,6 +53,11 @@
                 {% endfor %}
             </tbody>
         </table>
+        <div style="margin-top: 1rem;">
+            <a href="{{ url_for('student.download_clearance_pdf') }}" class="btn btn-primary" download>
+                Download as PDF
+            </a>
+        </div>
         {% else %}
         <p class="muted">You haven't been added to any clearance lists yet.</p>
         {% endif %}
