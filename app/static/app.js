@@ -271,7 +271,21 @@ function setupQrScanner() {
   updateCameraStatus("loading");
   window.Html5Qrcode.getCameras()
     .then((devices) => {
-      const cam = devices && devices[0] && devices[0].id;
+      // Prefer back/rear camera on mobile devices
+      let cam = null;
+      if (devices && devices.length > 0) {
+        // First, try to find a camera explicitly labeled as "back" or "rear"
+        const backCamera = devices.find(d => 
+          d.label.toLowerCase().includes('back') || 
+          d.label.toLowerCase().includes('rear')
+        );
+        if (backCamera) {
+          cam = backCamera.id;
+        } else {
+          // If no explicit back camera, use the last camera (usually the back on mobile)
+          cam = devices[devices.length - 1].id;
+        }
+      }
       if (!cam) throw new Error("No camera found");
 
       return html5QrCode.start(
@@ -324,7 +338,15 @@ function setupQrScanner() {
           toggleControls(false);
         } else {
           const devices = await window.Html5Qrcode.getCameras();
-          const cam = devices && devices[0] && devices[0].id;
+          let cam = null;
+          if (devices && devices.length > 0) {
+            // Prefer back/rear camera on mobile devices
+            const backCamera = devices.find(d => 
+              d.label.toLowerCase().includes('back') || 
+              d.label.toLowerCase().includes('rear')
+            );
+            cam = backCamera ? backCamera.id : devices[devices.length - 1].id;
+          }
           if (cam) {
             await html5QrCode.start(cam, config, () => {}, () => {});
             isRunning = true;
