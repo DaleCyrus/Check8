@@ -97,20 +97,20 @@ function setupQrScanner() {
     }
     
     box.innerHTML = `
-      <div style="display: flex; gap: 1rem; align-items: flex-start; padding: 1.2rem;">
-        <div style="font-size: 3em; animation: scaleIn 0.3s ease-out;">${statusIcon}</div>
-        <div style="flex: 1;">
-          <div style="font-weight: 700; font-size: 1em; margin-bottom: 0.25rem;">${studentName}</div>
-          <div style="font-size: 0.85em; color: #bfa074; margin-bottom: 0.5rem;">ID: ${studentNo}</div>
-          ${note ? `<div style="font-size: 0.8em; color: #bfa074; margin-bottom: 0.5rem; font-style: italic;">${note}</div>` : ''}
-          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; margin-top: 0.75rem;">
-            <button id="btnApprove" class="btn btn--sm" style="background: #22c55e; border: none; color: white; cursor: pointer; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.85em; font-weight: 600;" data-student="${studentId}" data-course="${courseId}" data-note="${note || ''}">
+      <div style="display: flex; gap: 1.5rem; align-items: flex-start; padding: 1.5rem;">
+        <div style="font-size: 3.5em; line-height: 1; animation: scaleIn 0.3s ease-out; flex-shrink: 0;">${statusIcon}</div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-weight: 700; font-size: 1.1em; margin-bottom: 0.5rem; word-break: break-word;">${studentName}</div>
+          <div style="font-size: 0.9em; color: #bfa074; margin-bottom: 0.75rem; word-break: break-all;"><strong>ID:</strong> ${studentNo}</div>
+          ${note ? `<div style="font-size: 0.85em; color: #bfa074; margin-bottom: 0.75rem; font-style: italic; border-left: 2px solid ${statusColor}; padding-left: 0.75rem;">${note}</div>` : ''}
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-top: 1rem;">
+            <button id="btnApprove" class="btn btn--sm" style="background: #22c55e; border: none; color: white; cursor: pointer; padding: 0.6rem 0.75rem; border-radius: 8px; font-size: 0.9em; font-weight: 600; transition: all 0.2s;" data-student="${studentId}" data-course="${courseId}" data-note="${note || ''}">
               ✓ Approve
             </button>
-            <button id="btnPending" class="btn btn--sm" style="background: #ff9800; border: none; color: white; cursor: pointer; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.85em; font-weight: 600;" data-student="${studentId}" data-course="${courseId}" data-note="${note || ''}">
+            <button id="btnPending" class="btn btn--sm" style="background: #ff9800; border: none; color: white; cursor: pointer; padding: 0.6rem 0.75rem; border-radius: 8px; font-size: 0.9em; font-weight: 600; transition: all 0.2s;" data-student="${studentId}" data-course="${courseId}" data-note="${note || ''}">
               ◉ Pending
             </button>
-            <button id="btnDecline" class="btn btn--sm" style="background: #ef4444; border: none; color: white; cursor: pointer; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.85em; font-weight: 600;" data-student="${studentId}" data-course="${courseId}" data-note="${note || ''}">
+            <button id="btnDecline" class="btn btn--sm" style="background: #ef4444; border: none; color: white; cursor: pointer; padding: 0.6rem 0.75rem; border-radius: 8px; font-size: 0.9em; font-weight: 600; transition: all 0.2s;" data-student="${studentId}" data-course="${courseId}" data-note="${note || ''}">
               ✕ Decline
             </button>
           </div>
