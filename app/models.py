@@ -1,5 +1,4 @@
 import enum
-import uuid
 from datetime import datetime
 
 from flask_login import UserMixin
@@ -284,93 +283,7 @@ class FacultyUserRole(db.Model):
         return f"<FacultyUserRole user={self.user_id} faculty={self.faculty_id} role={self.role}>"
 
 
-class Semester(db.Model):
-    """Academic semester for organizing clearance events"""
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), unique=True, nullable=False, index=True)  # e.g., "2024-2025 2nd Semester"
-    is_active = db.Column(db.Boolean, default=False, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
-    default_signatories = db.relationship("DefaultSignatory", back_populates="semester", cascade="all, delete-orphan")
-
-    def __repr__(self):
-        return f"<Semester {self.name}>"
-
-
-class DefaultSignatory(db.Model):
-    """Default signatories (College Dean, CCS Council, etc.) that should be auto-assigned to students per semester"""
-    id = db.Column(db.Integer, primary_key=True)
-    semester_id = db.Column(db.Integer, db.ForeignKey("semester.id"), nullable=False, index=True)
-    name = db.Column(db.String(120), nullable=False)  # e.g., "College Dean", "CCS Council", "SPEC Organization"
-    description = db.Column(db.String(500), nullable=True)
-    order = db.Column(db.Integer, default=0)  # For sorting
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-
-    semester = db.relationship("Semester", back_populates="default_signatories")
-
-    __table_args__ = (db.UniqueConstraint("semester_id", "name", name="uq_semester_signatory_name"),)
-
-    def __repr__(self):
-        return f"<DefaultSignatory {self.name} (semester_id={self.semester_id})>"
-
-
-class Event(db.Model):
-    """Event within a semester (e.g., College Dean clearance, CCS Council clearance)"""
-    id = db.Column(db.Integer, primary_key=True)
-    semester_id = db.Column(db.Integer, db.ForeignKey("semester.id"), nullable=False, index=True)
-    name = db.Column(db.String(120), nullable=False)  # e.g., "College Dean", "CCS Council"
-    description = db.Column(db.String(500), nullable=True)
-    is_signatory = db.Column(db.Boolean, default=False, nullable=False)  # True if this is a default signatory
-    order = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-
-    semester = db.relationship("Semester", foreign_keys=[semester_id])
-    enrollments = db.relationship("EventEnrollment", back_populates="event", cascade="all, delete-orphan")
-    clearances = db.relationship("EventClearance", back_populates="event", cascade="all, delete-orphan")
-
-    __table_args__ = (db.UniqueConstraint("semester_id", "name", name="uq_semester_event_name"),)
-
-    def __repr__(self):
-        return f"<Event {self.name} (semester_id={self.semester_id})>"
-
-
-class EventEnrollment(db.Model):
-    """Student enrollment in an event"""
-    id = db.Column(db.Integer, primary_key=True)
-    event_id = db.Column(db.Integer, db.ForeignKey("event.id"), nullable=False, index=True)
-    student_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
-    enrolled_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-
-    event = db.relationship("Event", back_populates="enrollments")
-    student = db.relationship("User", foreign_keys=[student_id])
-
-    __table_args__ = (db.UniqueConstraint("event_id", "student_id", name="uq_event_student_enrollment"),)
-
-    def __repr__(self):
-        return f"<EventEnrollment student={self.student_id} event={self.event_id}>"
-
-
-class EventClearance(db.Model):
-    """Clearance status for event (similar to ClearanceStatus but for events/signatories)"""
-    id = db.Column(db.Integer, primary_key=True)
-    event_id = db.Column(db.Integer, db.ForeignKey("event.id"), nullable=False, index=True)
-    student_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
-
-    state = db.Column(db.String(20), nullable=False, default=ClearanceState.PENDING.value)
-    note = db.Column(db.String(255), nullable=True)
-    cleared_by_user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-
-    event = db.relationship("Event", back_populates="clearances")
-    student = db.relationship("User", foreign_keys=[student_id])
-    cleared_by = db.relationship("User", foreign_keys=[cleared_by_user_id])
-
-    __table_args__ = (db.UniqueConstraint("event_id", "student_id", name="uq_event_student_clearance"),)
-
-    def __repr__(self):
-        return f"<EventClearance student={self.student_id} event={self.event_id} {self.state}>"
 
 
 @login_manager.user_loader

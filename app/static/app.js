@@ -72,6 +72,37 @@ function setupQrScanner() {
   let isRunning = false;
   let lastToken = null;
 
+  function isMobileDevice() {
+    const ua = (navigator.userAgent || "").toLowerCase();
+    const mobileByUa = /android|iphone|ipad|ipod|mobile/.test(ua);
+    const mobileByPointer = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+    return mobileByUa || mobileByPointer;
+  }
+
+  function pickPreferredCamera(devices) {
+    if (!devices || devices.length === 0) return null;
+
+    const isMobile = isMobileDevice();
+    const backKeywords = ["back", "rear", "environment", "traseira"];
+    const frontKeywords = ["front", "user", "facetime", "integrated", "webcam", "camera"];
+
+    const findByKeywords = (keywords) =>
+      devices.find((d) => {
+        const label = (d.label || "").toLowerCase();
+        return keywords.some((kw) => label.includes(kw));
+      });
+
+    if (isMobile) {
+      // Mobile default: use back camera for easier QR scanning.
+      const backCamera = findByKeywords(backKeywords);
+      return (backCamera || devices[devices.length - 1]).id;
+    }
+
+    // Desktop/laptop default: use front/user camera.
+    const frontCamera = findByKeywords(frontKeywords);
+    return (frontCamera || devices[0]).id;
+  }
+
   function renderResult(ok, html) {
     const box = document.getElementById("verifyResult");
     if (!box) return;
@@ -271,21 +302,7 @@ function setupQrScanner() {
   updateCameraStatus("loading");
   window.Html5Qrcode.getCameras()
     .then((devices) => {
-      // Prefer back/rear camera on mobile devices
-      let cam = null;
-      if (devices && devices.length > 0) {
-        // First, try to find a camera explicitly labeled as "back" or "rear"
-        const backCamera = devices.find(d => 
-          d.label.toLowerCase().includes('back') || 
-          d.label.toLowerCase().includes('rear')
-        );
-        if (backCamera) {
-          cam = backCamera.id;
-        } else {
-          // If no explicit back camera, use the last camera (usually the back on mobile)
-          cam = devices[devices.length - 1].id;
-        }
-      }
+      const cam = pickPreferredCamera(devices);
       if (!cam) throw new Error("No camera found");
 
       return html5QrCode.start(
@@ -338,15 +355,7 @@ function setupQrScanner() {
           toggleControls(false);
         } else {
           const devices = await window.Html5Qrcode.getCameras();
-          let cam = null;
-          if (devices && devices.length > 0) {
-            // Prefer back/rear camera on mobile devices
-            const backCamera = devices.find(d => 
-              d.label.toLowerCase().includes('back') || 
-              d.label.toLowerCase().includes('rear')
-            );
-            cam = backCamera ? backCamera.id : devices[devices.length - 1].id;
-          }
+          const cam = pickPreferredCamera(devices);
           if (cam) {
             await html5QrCode.start(cam, config, () => {}, () => {});
             isRunning = true;
