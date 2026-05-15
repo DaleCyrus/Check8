@@ -1,5 +1,5 @@
 
-from flask import Blueprint, abort, render_template, send_file
+from flask import Blueprint, abort, render_template, send_file, jsonify
 from flask_login import login_required, current_user
 import io
 from datetime import datetime
@@ -109,4 +109,38 @@ def download_clearance_pdf():
         print("[PDF GENERATION ERROR]", e)
         traceback.print_exc()
         return "PDF generation error: {}".format(e), 500
+
+
+@bp.get("/clearance-status-json")
+@login_required
+def clearance_status_json():
+    """API endpoint that returns clearance status as JSON for auto-refresh"""
+    _require_student()
+    
+    clearances_data = []
+    clearances = db.session.execute(
+        db.select(ClearanceStatus, Course, Faculty)
+        .join(Course, ClearanceStatus.course_id == Course.id)
+        .join(Faculty, Course.faculty_id == Faculty.id)
+        .where(ClearanceStatus.student_id == current_user.id)
+        .order_by(Course.name.asc())
+    ).all()
+    
+    for cs, course, faculty in clearances:
+        # Get instructors for this course
+        instructors = db.session.execute(
+            db.select(User).join(InstructorCourse).where(InstructorCourse.course_id == course.id)
+        ).scalars().all()
+        instructor_names = ', '.join([instr.full_name for instr in instructors]) if instructors else 'N/A'
+        
+        clearances_data.append({
+            'id': cs.id,
+            'course_code': course.code,
+            'course_name': course.name,
+            'instructor_names': instructor_names,
+            'state': cs.state,
+            'note': cs.note or '—'
+        })
+    
+    return jsonify(clearances_data)
 

@@ -7,6 +7,7 @@
     <p class="muted">Create an account to manage clearance status for your faculty/officers.</p>
 
     <form method="post" class="form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
         <label class="label" for="office_name">Department</label>
         <input id="office_name" name="office_name" class="input" placeholder="e.g. CS Department" value="{{ office_name or '' }}" required />
 
@@ -47,6 +48,11 @@
     const emailUsername = document.getElementById('email_username').value;
     const emailField = document.getElementById('email');
     emailField.value = emailUsername + '@gordoncollege.edu.ph';
+  });
+
+  // Auto-capitalize Full Name field to all uppercase
+  document.getElementById('full_name').addEventListener('input', function(e) {
+    this.value = this.value.toUpperCase();
   });
 </script>
 {% endblock %}

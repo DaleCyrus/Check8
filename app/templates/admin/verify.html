@@ -48,6 +48,7 @@
             <div>
                 <h2 class="h2">Paste token</h2>
                 <form id="pasteTokenForm" class="form" onsubmit="handlePasteTokenSubmit(event)">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                     <textarea id="tokenInput" class="input input--mono" name="token" rows="5" placeholder="Paste token here...">{{ token or "" }}</textarea>
                     <input type="hidden" id="courseIdInput" name="course_id" value="">
                     <button class="btn" type="submit">Verify</button>

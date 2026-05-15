@@ -1,4 +1,5 @@
 {% extends "base.html" %} {% block title %}Faculty Dashboard • CHECK8{% endblock %} {% block content %}
+<input type="hidden" id="csrfToken" value="{{ csrf_token() }}" />
 <script>
     function switchTab(tab) {
         const groupsView = document.getElementById('groups-view');
@@ -55,17 +56,27 @@
         }
 
         try {
+            const csrfToken = document.getElementById('csrfToken').value;
             const response = await fetch('{{ url_for("admin.search_students") }}', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
                 },
                 body: JSON.stringify({
                     q: query
                 })
             });
 
-            const data = await response.json();
+            let data;
+            try {
+                data = await response.json();
+            } catch (parseError) {
+                searchError.textContent = 'Server error: Unable to process response. Please refresh the page.';
+                searchError.style.display = 'block';
+                console.error('Response parse error:', parseError);
+                return;
+            }
 
             if (!response.ok || !data.ok) {
                 searchError.textContent = data.error || 'Search error';
@@ -162,10 +173,12 @@
         const searchError = document.getElementById('searchError');
 
         try {
+            const csrfToken = document.getElementById('csrfToken').value;
             const response = await fetch('{{ url_for("admin.bulk_add_students") }}', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
                 },
                 body: JSON.stringify({
                     student_ids: studentIds,
@@ -195,6 +208,21 @@
         }
     }
 </script>
+
+<!-- Auto-Refresh on Action -->
+<script>
+    // Refresh page when forms are submitted (add student, update note, remove student)
+    document.addEventListener('submit', function(e) {
+        const form = e.target;
+        
+        if (form.action.includes('set-status') || form.action.includes('remove-student') || form.action.includes('bulk_add_students')) {
+            // Wait a brief moment, then reload
+            setTimeout(function() {
+                location.reload();
+            }, 500);
+        }
+    });
+</script>
 <section class="card">
     <script id="assignedCoursesData" type="application/json">{{ assigned_courses_json | tojson }}</script>
     <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
@@ -213,48 +241,75 @@
         </div>
     </div>
 
+    <!-- Statistics Dashboard -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+        <div style="background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%); border: 1px solid #fb923c; border-radius: 0.75rem; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+            <p class="muted" style="margin: 0; font-size: 0.9rem;">Total Students</p>
+            <p style="margin: 0; font-size: 2.5rem; font-weight: 700; color: #ea580c;">{{ total_students }}</p>
+            <p class="muted" style="margin: 0; font-size: 0.85rem;">Enrolled in your courses</p>
+        </div>
+
+        <div style="background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); border: 1px solid #facc15; border-radius: 0.75rem; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+            <p class="muted" style="margin: 0; font-size: 0.9rem;">Pending</p>
+            <p style="margin: 0; font-size: 2.5rem; font-weight: 700; color: #ca8a04;">{{ pending_count }}</p>
+            <p class="muted" style="margin: 0; font-size: 0.85rem;">Awaiting clearance</p>
+        </div>
+
+        <div style="background: linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%); border: 1px solid #fb923c; border-radius: 0.75rem; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+            <p class="muted" style="margin: 0; font-size: 0.9rem;">Approved</p>
+            <p style="margin: 0; font-size: 2.5rem; font-weight: 700; color: #c2410c;">{{ approved_count }}</p>
+            <p class="muted" style="margin: 0; font-size: 0.85rem;">Clearance granted</p>
+        </div>
+
+        <div style="background: linear-gradient(135deg, #fecdd3 0%, #fbcfe8 100%); border: 1px solid #f472b6; border-radius: 0.75rem; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+            <p class="muted" style="margin: 0; font-size: 0.9rem;">Rejected</p>
+            <p style="margin: 0; font-size: 2.5rem; font-weight: 700; color: #be185d;">{{ rejected_count }}</p>
+            <p class="muted" style="margin: 0; font-size: 0.85rem;">Clearance denied</p>
+        </div>
+    </div>
+
     <!-- Tabs for View Mode -->
     <div class="dashboard-tabs" style="display: flex; gap: 0.5rem; margin-bottom: 2rem; border-bottom: 2px solid #e5e7eb;">
         <button type="button" class="btn btn--tab" id="tab-groups" onclick="switchTab('groups')" style="border: none; background: none; padding: 0.75rem 1rem; font-weight: 600; color: #6b7280; border-bottom: 3px solid transparent; cursor: pointer;">
-         Classes
+         📂 Classes
       </button>
         <button type="button" class="btn btn--tab" id="tab-all" onclick="switchTab('all')" style="border: none; background: none; padding: 0.75rem 1rem; font-weight: 600; color: #6b7280; border-bottom: 3px solid transparent; cursor: pointer;">
-        All Students
+        👥 All Students
       </button>
     </div>
 
     <!-- GROUPS VIEW -->
     <div id="groups-view" style="display: block;">
         {% if groups_data %}
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
             {% for group_item in groups_data %}
-            <div class="card" style="border: 1px solid #e5e7eb; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+            <div class="card" style="border: 1px solid #e5e7eb; padding: 1.75rem; display: flex; flex-direction: column; gap: 1rem; background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%); box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: box-shadow 0.2s, transform 0.2s;" onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='0 1px 3px rgba(0,0,0,0.1)'; this.style.transform='translateY(0)'">
                 <div>
-                    <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: var(--text);">📂 {{ group_item.group.name }}</h3>
-                    <p class="muted small" style="margin: 0 0 0.75rem 0;">{{ group_item.group.faculty.name }}</p>
+                    <h3 style="margin: 0 0 0.5rem 0; font-size: 1.15rem; color: var(--text); font-weight: 600;">📂 {{ group_item.group.name }}</h3>
+                    <p class="muted small" style="margin: 0 0 0.75rem 0; font-size: 0.85rem;">📍 {{ group_item.group.faculty.name }}</p>
                     {% if group_item.group.description %}
-                    <p class="muted small" style="margin: 0; font-size: 0.9rem; line-height: 1.4;">{{ group_item.group.description }}</p>
+                    <p class="muted small" style="margin: 0; font-size: 0.9rem; line-height: 1.5; color: #666;">{{ group_item.group.description }}</p>
                     {% endif %}
                 </div>
                 <div style="flex: 1;"></div>
                 <div style="display: flex; gap: 0.5rem; align-items: center;">
-                    <span class="badge" style="background: #ffe0b2; color: #e65100; padding: 0.4rem 0.8rem; border-radius: 9999px; font-size: 0.85rem;">
-                  {{ group_item.members|length }} students
+                    <span class="badge" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #b45309; padding: 0.4rem 0.8rem; border-radius: 9999px; font-size: 0.85rem; font-weight: 500;">
+                  👥 {{ group_item.members|length }} students
                 </span>
                 </div>
-                <a href="{{ url_for('admin.view_group', group_id=group_item.group.id) }}" class="btn" style="width: 100%; text-align: center; margin: 0;">
-                View & Manage →
+                <a href="{{ url_for('admin.view_group', group_id=group_item.group.id) }}" class="btn" style="width: 100%; text-align: center; margin: 0; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; font-weight: 500; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                👉 View & Manage
               </a>
             </div>
             {% endfor %}
         </div>
         {% else %}
-        <div style="padding: 3rem 2rem; text-align: center; background: linear-gradient(135deg, #fff9f0 0%, #ffe8d1 100%); border: 2px dashed rgba(255, 152, 0, 0.3); border-radius: 0.75rem;">
-            <div style="font-size: 3rem; margin-bottom: 1rem;"></div>
-            <p style="font-size: 1.1rem; color: var(--text); margin: 0 0 0.5rem 0; font-weight: 600;">No Classes Yet</p>
-            <p class="muted" style="margin: 0 0 1.5rem 0;">Create a class to organize students for clearance management.</p>
-            <a href="{{ url_for('admin.list_groups') }}" class="btn" style="display: inline-block;">
-            Create New Class
+        <div style="padding: 4rem 2rem; text-align: center; background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%); border: 2px dashed #fb923c; border-radius: 0.75rem;">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">📂</div>
+            <p style="font-size: 1.2rem; color: var(--text); margin: 0 0 0.75rem 0; font-weight: 600;">No Classes Yet</p>
+            <p class="muted" style="margin: 0 0 1.75rem 0; font-size: 0.95rem;">Organize your students into classes for better clearance management.</p>
+            <a href="{{ url_for('admin.list_groups') }}" class="btn" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; padding: 0.75rem 1.5rem;">
+            ➕ Create New Class
           </a>
         </div>
         {% endif %}
@@ -263,16 +318,19 @@
     <!-- ALL STUDENTS VIEW -->
     <div id="all-view" style="display: none;">
         <!-- Add Students Section -->
-        <div style="background: linear-gradient(135deg, #fff9f0 0%, #ffe8d1 100%); border: 1px solid rgba(255, 152, 0, 0.3); border-radius: 0.5rem; padding: 2rem; margin-bottom: 2rem;">
-            <h3 class="h2">Add Students to Course</h3>
-            <p class="muted" style="margin-bottom: 1rem;">Search for students to add them to your course clearance list.</p>
+        <div style="background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%); border: 1px solid #fb923c; border-radius: 0.5rem; padding: 2.5rem; margin-bottom: 3rem;">
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                <span style="font-size: 2rem;">🔍</span>
+                <h3 class="h2" style="margin: 0;">Add Students to Course</h3>
+            </div>
+            <p class="muted" style="margin-bottom: 1.5rem;">Search for students to add them to your course clearance list.</p>
 
             <div class="search-row" style="display: flex; gap: 0.75rem; margin-bottom: 1rem;">
                 <input type="text" id="studentSearch" class="input" placeholder="Search by student number or name..." autocomplete="off" style="flex: 1;" />
-                <button class="btn" onclick="searchStudents()" style="white-space: nowrap;">🔍 Search</button>
+                <button class="btn" onclick="searchStudents()" style="white-space: nowrap; background: #f97316; color: white; border: none;">🔍 Search</button>
             </div>
 
-            <div id="searchError" style="display: none; padding: 1rem; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 0.375rem; color: #991b1b; margin-bottom: 1rem; font-size: 0.9rem;"></div>
+            <div id="searchError" style="display: none; padding: 1rem; background: #fecaca; border: 1px solid #f87171; border-radius: 0.375rem; color: #7f1d1d; margin-bottom: 1rem; font-size: 0.9rem;"></div>
 
             <div id="searchResults" style="display: none;">
                 <div style="background: white; border: 1px solid #e5e7eb; border-radius: 0.375rem; padding: 1rem; margin-bottom: 1rem;">
@@ -281,7 +339,7 @@
                     </div>
 
                     <!-- Bulk Actions Panel -->
-                    <div id="bulkActionsPanel" style="display: none; background: #fffaed; border: 1px solid rgba(255, 152, 0, 0.3); border-radius: 0.375rem; padding: 1rem; margin-bottom: 1rem;">
+                    <div id="bulkActionsPanel" style="display: none; background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%); border: 1px solid #fb923c; border-radius: 0.375rem; padding: 1rem; margin-bottom: 1rem;">
                         <div style="display: grid; grid-template-columns: auto 1fr auto; gap: 1rem; align-items: center;">
                             <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; cursor: pointer;">
                   <input type="checkbox" id="selectAllStudents" onchange="toggleSelectAll()" style="cursor: pointer; width: 18px; height: 18px;" />
@@ -295,7 +353,7 @@
                       <option value="{{ course.id }}">{{ course.code }}</option>
                     {% endfor %}
                   </select>
-                                <button class="btn btn--sm" onclick="bulkAddStudents()" style="white-space: nowrap;">➕ Add</button>
+                                <button class="btn btn--sm" onclick="bulkAddStudents()" style="white-space: nowrap; background: #f97316; color: white; border: none;">➕ Add</button>
                             </div>
                         </div>
                     </div>
@@ -311,12 +369,15 @@
 
         <!-- Current Clearance List Section -->
         <div style="margin-bottom: 1rem;">
-            <h3 class="h2">Clearance Status</h3>
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                <span style="font-size: 1.8rem;">📋</span>
+                <h3 class="h2" style="margin: 0;">Clearance Status</h3>
+            </div>
             <p class="muted" style="margin-bottom: 1.5rem;">Manage student clearance status for your course.</p>
 
             {% if rows|length > 0 %}
-            <div style="overflow-x: auto;">
-                <table class="table" style="width: 100%;">
+            <div style="overflow-x: auto; background: white; border: 1px solid #e5e7eb; border-radius: 0.5rem;">
+                <table class="table" style="width: 100%; border-collapse: collapse;">
                     <thead>
                         <tr>
                             <th>Student No.</th>
@@ -344,6 +405,7 @@
                             </td>
                             <td data-label="Note" class="muted" style="font-size: 0.9rem;">
                                 <form method="post" action="{{ url_for('admin.set_status') }}" class="note-form" style="display: flex; gap: 0.5rem; align-items: flex-start;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                                     <input type="hidden" name="student_id" value="{{ student.id }}" />
                                     <input type="hidden" name="course_id" value="{{ course.id }}" />
                                     <input type="hidden" name="state" value="{{ cs.state }}" />
@@ -353,6 +415,7 @@
                             </td>
                             <td data-label="Action" style="text-align: center;">
                                 <form method="post" action="{{ url_for('admin.remove_student') }}" style="display: inline;" onsubmit="return confirm('Remove this student?');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                                     <input type="hidden" name="student_id" value="{{ student.id }}" />
                                     <input type="hidden" name="course_id" value="{{ course.id }}" />
                                     <button type="submit" class="btn btn--sm btn--ghost" style="color: #dc2626; font-size: 0.85rem; width: 100%; padding: 0.5rem;"> Remove</button>
@@ -364,8 +427,10 @@
                 </table>
             </div>
             {% else %}
-            <div class="muted" style="padding: 2rem; text-align: center; background: white; border: 1px dashed #e5e7eb; border-radius: 0.5rem;">
-                No students in clearance list yet. Use the search above to add students.
+            <div style="padding: 3rem 2rem; text-align: center; background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%); border: 2px dashed #fb923c; border-radius: 0.5rem;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">👥</div>
+                <p style="font-size: 1rem; color: var(--text); margin: 0 0 0.5rem 0; font-weight: 600;">No students in clearance list yet</p>
+                <p class="muted" style="margin: 0;">Use the search above to add students to your course.</p>
             </div>
             {% endif %}
         </div>

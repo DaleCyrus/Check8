@@ -73,6 +73,7 @@
 
       <!-- Submit Form -->
       <form method="post" action="{{ url_for('admin.add_students_to_group') }}" id="addStudentsForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
         <input type="hidden" name="group_id" value="{{ group.id }}" />
         <input type="hidden" name="student_ids" id="studentIdsInput" />
         <button type="submit" class="btn" id="submitBtn" disabled style="opacity: 0.5; cursor: not-allowed; width: 100%;">Add Selected Students</button>
@@ -130,6 +131,7 @@
                   <td data-label="Added" class="muted small">{{ member.added_at.strftime('%y-%m-%d') }}</td>
                   <td data-label="Action" style="text-align: center;">
                     <form method="post" action="{{ url_for('admin.remove_student_from_group', group_id=group.id, student_id=student.id) }}" style="display: inline;" onsubmit="return confirm('Remove this student?');">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                       <button type="submit" class="btn btn--sm btn--ghost" style="color: #dc2626; font-size: 0.85rem;">Remove</button>
                     </form>
                   </td>

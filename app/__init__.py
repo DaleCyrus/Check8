@@ -1,9 +1,9 @@
-from flask import Flask
+from flask import Flask, render_template
 from sqlalchemy import text
 from pathlib import Path
 
 from .config import Config
-from .extensions import db, login_manager
+from .extensions import db, login_manager, mail, csrf
 
 
 def create_app():
@@ -21,6 +21,8 @@ def create_app():
 
     db.init_app(app)
     login_manager.init_app(app)
+    mail.init_app(app)
+    csrf.init_app(app)
     
     # Initialize SQLite optimizations
     config.init_db(app)
@@ -43,6 +45,20 @@ def create_app():
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
         return response
+
+    # Error handlers
+    @app.errorhandler(404)
+    def not_found(e):
+        return render_template("error.html", code=404, message="Page not found"), 404
+
+    @app.errorhandler(403)
+    def forbidden(e):
+        return render_template("error.html", code=403, message="Access denied"), 403
+
+    @app.errorhandler(500)
+    def server_error(e):
+        app.logger.error(f"Server error: {e}")
+        return render_template("error.html", code=500, message="Internal server error"), 500
 
     return app
 

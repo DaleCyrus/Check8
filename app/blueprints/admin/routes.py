@@ -39,6 +39,19 @@ def _require_faculty():
         abort(403)
 
 
+def _require_faculty_json(f):
+    """Decorator for JSON endpoints that checks faculty permission."""
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or not getattr(current_user, "is_faculty", False):
+            return jsonify({"ok": False, "error": "Unauthorized"}), 403
+        if not current_user.assigned_faculties:
+            return jsonify({"ok": False, "error": "No assigned faculties"}), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
+
 @bp.get("/dashboard")
 @login_required
 def dashboard():
@@ -63,7 +76,11 @@ def dashboard():
                              assigned_courses_json=[],
                              primary_faculty=assigned_faculties[0] if assigned_faculties else None,
                              rows=[],
-                             groups_data=[])
+                             groups_data=[],
+                             total_students=0,
+                             pending_count=0,
+                             approved_count=0,
+                             rejected_count=0)
 
     assigned_course_ids = [c.id for c in assigned_courses]
     
@@ -79,6 +96,12 @@ def dashboard():
         )
         .all()
     )
+
+    # Calculate statistics
+    total_students = len(rows)
+    pending_count = sum(1 for cs, u, c, f in rows if cs.state == ClearanceState.PENDING.value)
+    approved_count = sum(1 for cs, u, c, f in rows if cs.state == ClearanceState.CLEARED.value)
+    rejected_count = sum(1 for cs, u, c, f in rows if cs.state == ClearanceState.BLOCKED.value)
 
     # Get all groups with their members and clearance status
     groups = db.session.execute(
@@ -130,15 +153,33 @@ def dashboard():
                          assigned_courses_json=[{"id": c.id, "name": c.name, "faculty_id": c.faculty_id} for c in assigned_courses],
                          primary_faculty=assigned_faculties[0] if assigned_faculties else None,
                          rows=rows,
-                         groups_data=groups_data)
+                         groups_data=groups_data,
+                         total_students=total_students,
+                         pending_count=pending_count,
+                         approved_count=approved_count,
+                         rejected_count=rejected_count)
 
 
 @bp.post("/set-status")
 @login_required
 def set_status():
     _require_faculty()
-    student_id = int(request.form.get("student_id"))
-    course_id = int(request.form.get("course_id"))
+    
+    # Validate required form fields
+    student_id_str = request.form.get("student_id", "").strip()
+    course_id_str = request.form.get("course_id", "").strip()
+    
+    if not student_id_str or not course_id_str:
+        flash("Invalid student ID or course ID.", "error")
+        return redirect(url_for("admin.dashboard"))
+    
+    try:
+        student_id = int(student_id_str)
+        course_id = int(course_id_str)
+    except ValueError:
+        flash("Invalid student ID or course ID.", "error")
+        return redirect(url_for("admin.dashboard"))
+    
     state = request.form.get("state")
     group_id_str = request.form.get("group_id")
     group_id = int(group_id_str) if group_id_str else None  # Optional: if updating from a group page
@@ -247,8 +288,8 @@ def verify():
 
 @bp.post("/verify.json")
 @login_required
+@_require_faculty_json
 def verify_json():
-    _require_faculty()
     data = request.get_json(silent=True) or {}
     token = (data.get("token") or "").strip()
     course_id = data.get("course_id")
@@ -323,53 +364,64 @@ def verify_json():
 
 @bp.post("/search-students.json")
 @login_required
+@_require_faculty_json
 def search_students():
     """Search for students by student number or name."""
-    _require_faculty()
-    data = request.get_json(silent=True) or {}
-    query = (data.get("q") or "").strip().lower()
+    try:
+        data = request.get_json(silent=True) or {}
+        query = (data.get("q") or "").strip().lower()
 
-    if not query or len(query) < 2:
-        return jsonify({"ok": False, "error": "Search query must be at least 2 characters"}), 400
+        if not query or len(query) < 2:
+            return jsonify({"ok": False, "error": "Search query must be at least 2 characters"}), 400
 
-    # Get only courses the instructor is directly assigned to teach
-    assigned_courses = db.session.execute(
-        db.select(Course).join(InstructorCourse).where(InstructorCourse.user_id == current_user.id)
-    ).scalars().all()
-    assigned_course_ids = [c.id for c in assigned_courses]
+        # Get only courses the instructor is directly assigned to teach
+        assigned_courses = db.session.execute(
+            db.select(Course).join(InstructorCourse).where(InstructorCourse.user_id == current_user.id)
+        ).scalars().all()
+        assigned_course_ids = [c.id for c in assigned_courses]
 
-    # Search for all students
-    students = db.session.execute(
-        db.select(User)
-        .where(
-            User.role == "student",
-            or_(User.student_number.ilike(f"%{query}%"), User.full_name.ilike(f"%{query}%")),
-        )
-        .limit(10)
-    ).scalars().all()
+        # Search for all students
+        students = db.session.execute(
+            db.select(User)
+            .where(
+                User.role == "student",
+                or_(User.student_number.ilike(f"%{query}%"), User.full_name.ilike(f"%{query}%")),
+            )
+            .limit(10)
+        ).scalars().all()
 
-    results = []
-    for student in students:
-        # Check which courses this student is already added to
-        already_added_courses = []
-        for course in assigned_courses:
-            exists = db.session.execute(
-                db.select(ClearanceStatus).where(
-                    ClearanceStatus.student_id == student.id,
-                    ClearanceStatus.course_id == course.id,
-                )
-            ).scalar_one_or_none()
-            if exists:
-                already_added_courses.append(course.id)
+        results = []
+        for student in students:
+            # Check which courses this student is already added to
+            already_added_courses = []
+            for course in assigned_courses:
+                try:
+                    exists = db.session.execute(
+                        db.select(ClearanceStatus).where(
+                            ClearanceStatus.student_id == student.id,
+                            ClearanceStatus.course_id == course.id,
+                        )
+                    ).scalar_one_or_none()
+                    if exists:
+                        already_added_courses.append(course.id)
+                except OperationalError:
+                    # If database is locked, continue with what we have
+                    pass
 
-        results.append({
-            "id": student.id,
-            "student_number": student.student_number,
-            "full_name": student.full_name,
-            "already_added_courses": already_added_courses,
-        })
+            results.append({
+                "id": student.id,
+                "student_number": student.student_number,
+                "full_name": student.full_name,
+                "already_added_courses": already_added_courses,
+            })
 
-    return jsonify({"ok": True, "results": results})
+        return jsonify({"ok": True, "results": results})
+    except OperationalError as e:
+        return jsonify({"ok": False, "error": "Database is temporarily locked. Please try again."}), 503
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": f"Search error: {str(e)}"}), 500
 
 
 @bp.post("/add-student")

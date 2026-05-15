@@ -1,6 +1,7 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_user, logout_user
 from sqlalchemy.exc import OperationalError
+from datetime import datetime
 import uuid
 import time
 
@@ -200,11 +201,8 @@ def signup_student():
         db.session.add(user)
         _commit_with_retry()
 
-        # Do not automatically add the student to the faculty's clearance list.
-        # Faculty should add students manually via the dashboard search.
-        login_user(user)
-        flash("Account created. Welcome!", "success")
-        return redirect(url_for("student.dashboard"))
+        flash("Account created successfully! You can now log in.", "success")
+        return redirect(url_for("auth.login"))
 
     return render_template("auth/signup_student.html")
 
@@ -338,9 +336,8 @@ def signup_instructor():
         db.session.add(course_assignment)
         _commit_with_retry()  # Single commit for all operations
 
-        login_user(user)
-        flash("Instructor account created. You can now manage clearances for your course.", "success")
-        return redirect(url_for("admin.dashboard"))
+        flash("Instructor account created successfully! You can now log in.", "success")
+        return redirect(url_for("auth.login"))
 
     return render_template("auth/signup_instructor.html")
 

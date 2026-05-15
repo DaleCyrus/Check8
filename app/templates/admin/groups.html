@@ -15,8 +15,7 @@
         <p class="muted" style="margin-bottom: 1.5rem;">Add a new class to organize students.</p>
         
         <form method="post" action="{{ url_for('admin.create_group') }}" style="display: flex; flex-direction: column; gap: 1.2rem;">
-          
-          <!-- Course Selection -->
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
           <div>
             <label class="label">Select Course</label>
             <select name="course_id" class="input" required>
@@ -62,6 +61,7 @@
                 <div style="display: flex; gap: 0.5rem;">
                   <a href="{{ url_for('admin.view_group', group_id=group.id) }}" class="btn btn--sm">Manage</a>
                   <form method="post" action="{{ url_for('admin.delete_group', group_id=group.id) }}" style="display: inline;" onsubmit="return confirm('Delete this class?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                     <button type="submit" class="btn btn--sm btn--ghost" style="color: #dc2626;">Delete</button>
                   </form>
                 </div>

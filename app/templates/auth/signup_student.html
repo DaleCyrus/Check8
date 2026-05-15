@@ -7,7 +7,7 @@
     <p class="muted">Create a student account to access your clearance dashboard.</p>
 
     <form method="post" class="form">
-        <label class="label" for="student_number">Student Number</label>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
         <input id="student_number" name="student_number" class="input" placeholder="e.g. 20xxxxxxx" value="{{ student_number or '' }}" required />
 
         <label class="label" for="full_name">Full name</label>
@@ -54,6 +54,11 @@
         const emailUsername = document.getElementById('email_username').value;
         const emailField = document.getElementById('email');
         emailField.value = emailUsername + '@gordoncollege.edu.ph';
+    });
+
+    // Auto-capitalize Full Name field to all uppercase
+    document.getElementById('full_name').addEventListener('input', function(e) {
+        this.value = this.value.toUpperCase();
     });
 </script>
 {% endblock %}

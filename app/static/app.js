@@ -50,9 +50,13 @@ async function verifyTokenViaJson(token) {
     throw new Error("Please select a course first");
   }
   
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { 
+      "Content-Type": "application/json",
+      "X-CSRFToken": csrfToken
+    },
     body: JSON.stringify({ token, course_id: parseInt(courseId) }),
   });
   const data = await res.json().catch(() => null);
@@ -191,6 +195,12 @@ function setupQrScanner() {
       // Include note if provided
       if (note) {
         formData.append("note", note);
+      }
+      
+      // Add CSRF token
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+      if (csrfToken) {
+        formData.append("csrf_token", csrfToken);
       }
 
       const response = await fetch("/faculty/set-status", {
@@ -390,6 +400,45 @@ function setupQrScanner() {
 document.addEventListener("DOMContentLoaded", () => {
   setupLoginForm();
   setupCopyButtons();
+  setupFormLoadingStates();
   // Don't auto-setup QR scanner here - let verify.html handle it with proper timing
 });
+
+// ===== FORM LOADING STATES =====
+function setupFormLoadingStates() {
+  // Find all forms with submit buttons
+  document.querySelectorAll('form').forEach(form => {
+    form.addEventListener('submit', function(e) {
+      // Only add loading state if it's a regular form submission (not AJAX)
+      const submitBtn = this.querySelector('button[type="submit"]');
+      if (submitBtn && !submitBtn.classList.contains('no-loading')) {
+        submitBtn.classList.add('loading');
+        submitBtn.disabled = true;
+        
+        // Original button text for restoration
+        const originalText = submitBtn.textContent;
+        submitBtn.setAttribute('data-original-text', originalText);
+        
+        // Restore after 3 seconds if it hasn't redirected
+        setTimeout(() => {
+          submitBtn.classList.remove('loading');
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalText;
+        }, 3000);
+      }
+    });
+  });
+}
+
+// Smooth transition for notification dismissal
+function setupNotificationDismissal() {
+  document.querySelectorAll('.flash__item').forEach(item => {
+    item.addEventListener('click', function() {
+      this.style.animation = 'slideInUp 0.3s ease-out reverse';
+      setTimeout(() => this.remove(), 300);
+    });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', setupNotificationDismissal);
 

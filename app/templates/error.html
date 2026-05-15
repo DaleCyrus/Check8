@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Error {{ code }} • CHECK8{% endblock %}
+
+{% block content %}
+<div class="error-container card">
+  <h1 class="error-code">{{ code }}</h1>
+  <h2 class="error-title">
+    {% if code == 404 %}
+      Page Not Found
+    {% elif code == 403 %}
+      Access Denied
+    {% elif code == 500 %}
+      Something Went Wrong
+    {% else %}
+      Error
+    {% endif %}
+  </h2>
+  
+  <p class="error-message">
+    {% if code == 404 %}
+      The page you're looking for doesn't exist. It might have been moved or deleted.
+    {% elif code == 403 %}
+      You don't have permission to access this resource. Please check your login credentials or contact an administrator.
+    {% elif code == 500 %}
+      We encountered an unexpected error. Our team has been notified and is working on it. Please try again later.
+    {% else %}
+      {{ message or 'An error occurred while processing your request.' }}
+    {% endif %}
+  </p>
+
+  <div class="error-actions">
+    <a href="{{ url_for('auth.home') }}" class="btn">
+      Go Home
+    </a>
+    <a href="javascript:history.back()" class="btn btn--ghost">
+      Go Back
+    </a>
+  </div>
+</div>
+
+<style>
+  main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 70vh;
+  }
+  
+  .error-container.card {
+    max-width: 500px;
+    width: 100%;
+  }
+</style>
+{% endblock %}

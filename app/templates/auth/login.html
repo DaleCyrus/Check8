@@ -5,9 +5,9 @@
     <p class="muted">Enter your institutional email and password.</p>
 
     <form method="post" class="form">
-        <label class="label" for="email">Institutional Email</label>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
         <div style="position: relative;">
-          <input id="email" name="email" type="text" class="input" placeholder="e.g. 20xxxxxxx" required style="padding-right: 220px;" />
+          <input id="email" name="email" type="text" class="input" placeholder="e.g. 20xxxxxxx" required autocapitalize="off" style="padding-right: 220px;" />
           <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #666; font-size: 14px;">@gordoncollege.edu.ph</span>
         </div>
 
