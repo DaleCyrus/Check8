@@ -12,6 +12,25 @@ from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 
 
+def truncate_text(text, max_length=30):
+    """
+    Truncate text to max_length characters and add ellipsis if needed.
+    
+    Args:
+        text: Text to truncate
+        max_length: Maximum number of characters
+    
+    Returns:
+        Truncated text with "..." if it exceeds max_length
+    """
+    if not text:
+        return "N/A"
+    text = str(text).strip()
+    if len(text) > max_length:
+        return text[:max_length-3] + "..."
+    return text
+
+
 def generate_clearance_certificate(student, clearances_data):
     """
     Generate a PDF certificate of clearance status for a student.
@@ -114,10 +133,10 @@ def generate_clearance_certificate(student, clearances_data):
         status = cs.state.upper()
         updated = cs.updated_at.strftime("%b %d, %Y") if cs.updated_at else "N/A"
         clearance_table_data.append([
-            course.code,
-            course.name,
-            instructor_names,
-            faculty.name,
+            truncate_text(course.code, 12),
+            truncate_text(course.name, 20),
+            truncate_text(instructor_names, 20),
+            truncate_text(faculty.name, 20),
             status,
             updated,
         ])
@@ -133,7 +152,7 @@ def generate_clearance_certificate(student, clearances_data):
         ('ALIGN', (4, 0), (4, -1), 'CENTER'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, 0), 9),
-        ('FONTSIZE', (0, 1), (-1, -1), 7),
+        ('FONTSIZE', (0, 1), (-1, -1), 9),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
         ('TOPPADDING', (0, 0), (-1, 0), 8),
         ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
