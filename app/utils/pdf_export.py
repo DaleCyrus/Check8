@@ -43,7 +43,7 @@ def generate_clearance_certificate(student, clearances_data):
         BytesIO object containing PDF data
     """
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch, rightMargin=0.3*inch, leftMargin=0.3*inch)
     
     styles = getSampleStyleSheet()
     story = []
@@ -133,15 +133,15 @@ def generate_clearance_certificate(student, clearances_data):
         status = cs.state.upper()
         updated = cs.updated_at.strftime("%b %d, %Y") if cs.updated_at else "N/A"
         clearance_table_data.append([
-            truncate_text(course.code, 12),
-            truncate_text(course.name, 20),
-            truncate_text(instructor_names, 20),
-            truncate_text(faculty.name, 20),
+            truncate_text(course.code, 10),
+            truncate_text(course.name, 15),
+            truncate_text(instructor_names, 15),
+            truncate_text(faculty.name, 15),
             status,
             updated,
         ])
     
-    clearance_table = Table(clearance_table_data, colWidths=[0.8*inch, 1.2*inch, 1.1*inch, 1.4*inch, 0.7*inch, 0.8*inch])
+    clearance_table = Table(clearance_table_data, colWidths=[0.7*inch, 1.0*inch, 1.0*inch, 1.1*inch, 0.65*inch, 0.75*inch])
     
     # Apply table styling
     table_style = [
@@ -151,14 +151,14 @@ def generate_clearance_certificate(student, clearances_data):
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('ALIGN', (4, 0), (4, -1), 'CENTER'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 9),
-        ('FONTSIZE', (0, 1), (-1, -1), 9),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
-        ('TOPPADDING', (0, 0), (-1, 0), 8),
-        ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
-        ('TOPPADDING', (0, 1), (-1, -1), 8),
-        ('LEFTPADDING', (0, 0), (-1, -1), 4),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+        ('FONTSIZE', (0, 0), (-1, 0), 8),
+        ('FONTSIZE', (0, 1), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+        ('TOPPADDING', (0, 0), (-1, 0), 6),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 5),
+        ('TOPPADDING', (0, 1), (-1, -1), 5),
+        ('LEFTPADDING', (0, 0), (-1, -1), 3),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 3),
         ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#cccccc')),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
     ]
