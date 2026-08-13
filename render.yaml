@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: check8
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:app
+    plan: free
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        scope: run_and_build
+        sync: false
+
+databases:
+  - name: check8-db
+    databaseName: check8_db
+    user: check8_user
+    plan: free

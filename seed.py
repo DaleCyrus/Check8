@@ -6,7 +6,6 @@ from app.extensions import db
 from app.models import ClearanceState, ClearanceStatus, Course, Faculty, FacultyAssignment, Role, StudentCourse, User
 
 
-<<<<<<< HEAD
 # You can freely add more faculties / students here.
 # Just append new tuples following the same pattern.
 FACULTY_DEFS: list[tuple[str, str, str, str, str]] = [
@@ -36,17 +35,6 @@ STUDENT_COURSE_DEFS: list[tuple[str, str]] = [
     ("2022-0001", "CS102"),
     ("2022-0001", "CS103"),
     ("2022-0002", "CS101"),
-=======
-FACULTY_DEFS: list[tuple[str, str, str, str]] = [
-    ("Registrar", "registrar", "Registrar Office", "office123"),
-    ("Library", "library", "Library Office", "office123"),
-    ("CS Department", "csdept", "CS Department Office", "office123"),
-]
-
-STUDENT_DEFS: list[tuple[str, str, str, str, str]] = [
-    ("2022-0001", "Gian Karlo Student", "College of Computer Studies", "Bachelor of Science in Computer Science", "student123"),
-    ("2022-0002", "Sample Student Two", "College of Engineering", "Bachelor of Science in Civil Engineering", "student123"),
->>>>>>> 945c93707584f8b12affb6ce061b90da50e5c608
 ]
 
 
@@ -95,11 +83,7 @@ def get_or_create_faculty_user(username: str, full_name: str, email: str, passwo
     db.session.add(u)
     db.session.commit()
 
-<<<<<<< HEAD
     # Create faculty assignment
-=======
-    from .models import FacultyAssignment
->>>>>>> 945c93707584f8b12affb6ce061b90da50e5c608
     assignment = FacultyAssignment(
         user_id=u.id,
         faculty_id=faculty.id
@@ -109,7 +93,6 @@ def get_or_create_faculty_user(username: str, full_name: str, email: str, passwo
     return u
 
 
-<<<<<<< HEAD
 def get_or_create_course(code: str, name: str, faculty: Faculty) -> Course:
     course = db.session.execute(db.select(Course).where(Course.code == code)).scalar_one_or_none()
     if course:
@@ -141,9 +124,6 @@ def enroll_student_in_course(student: User, course: Course) -> StudentCourse:
 # Removed automatic clearance row creation.
 # Staff now explicitly add students via the "Add Students to Clearance List" feature.
 # This ensures staff only see students they've specifically added.
-=======
-
->>>>>>> 945c93707584f8b12affb6ce061b90da50e5c608
 def ensure_clearance_rows(student: User, faculties: list[Faculty]) -> None:
     pass
 

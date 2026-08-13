@@ -13,7 +13,7 @@ class Config:
     INSTANCE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "instance")
     os.makedirs(INSTANCE_PATH, exist_ok=True)
     
-    DATABASE_URL = os.getenv("DATABASE_URL")
+    DATABASE_URL = os.getenv("https://kbionslwaytdojjdsvbo.supabase.co")
     if not DATABASE_URL:
         DATABASE_URL = f"sqlite:///{os.path.join(INSTANCE_PATH, 'check8_fixed.db')}"
     
