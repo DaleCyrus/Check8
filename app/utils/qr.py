@@ -1,61 +1,60 @@
 """QR code generation and token verification utilities."""
 import qrcode
-import jwt
 from datetime import datetime, timedelta
 from typing import Optional
 import io
+import json
+import base64
 
 
 def make_student_token(user) -> str:
     """
-    Generate a JWT token containing student information.
+    Generate a token containing student information (base64 encoded JSON).
     
     Args:
         user: User object with student information
         
     Returns:
-        JWT token string
+        Base64 encoded token string
     """
-    from ..extensions import db
-    from ..models import User
-    
     payload = {
         'user_id': user.id,
         'email': user.email,
         'student_number': getattr(user, 'student_number', None),
         'full_name': user.full_name,
-        'iat': datetime.utcnow(),
-        'exp': datetime.utcnow() + timedelta(days=365),  # 1 year expiry
+        'iat': datetime.utcnow().isoformat(),
+        'exp': (datetime.utcnow() + timedelta(days=365)).isoformat(),  # 1 year expiry
     }
     
-    # Import from config
-    from ..config import Config
-    secret_key = Config.SECRET_KEY
-    
-    token = jwt.encode(payload, secret_key, algorithm='HS256')
+    # Encode as JSON then base64
+    json_str = json.dumps(payload)
+    token = base64.b64encode(json_str.encode()).decode('utf-8')
     return token
 
 
 def verify_student_token(token: str) -> Optional[dict]:
     """
-    Verify and decode a JWT token.
+    Verify and decode a base64 token.
     
     Args:
-        token: JWT token string
+        token: Base64 encoded token string
         
     Returns:
         Decoded token payload or None if verification fails
     """
     try:
-        from ..config import Config
-        secret_key = Config.SECRET_KEY
+        # Decode from base64
+        json_str = base64.b64decode(token).decode('utf-8')
+        payload = json.loads(json_str)
         
-        payload = jwt.decode(token, secret_key, algorithms=['HS256'])
+        # Check expiry
+        exp_str = payload.get('exp')
+        if exp_str:
+            exp_time = datetime.fromisoformat(exp_str)
+            if datetime.utcnow() > exp_time:
+                return None
+        
         return payload
-    except jwt.ExpiredSignatureError:
-        return None
-    except jwt.InvalidTokenError:
-        return None
     except Exception:
         return None
 
