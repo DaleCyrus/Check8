@@ -42,9 +42,17 @@ def create_app() -> Flask:
         app.register_blueprint(auth_bp)
         app.register_blueprint(admin_bp)
         app.register_blueprint(student_bp)
-    except Exception:
-        # If blueprint import fails, don't crash here; let app start for debugging
-        pass
+    except Exception as e:
+        # Log the error for debugging
+        import traceback
+        print(f"[ERROR] Blueprint registration failed: {e}")
+        traceback.print_exc()
+        raise  # Re-raise so we can see the actual error
+
+    # Health check endpoint
+    @app.get("/health")
+    def health():
+        return {"status": "ok"}, 200
 
     # Ensure database tables exist
     with app.app_context():
