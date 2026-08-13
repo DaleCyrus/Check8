@@ -13,9 +13,13 @@ class Config:
     INSTANCE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "instance")
     os.makedirs(INSTANCE_PATH, exist_ok=True)
     
-    DATABASE_URL = os.getenv("https://kbionslwaytdojjdsvbo.supabase.co")
+    DATABASE_URL = os.getenv("DATABASE_URL")
     if not DATABASE_URL:
         DATABASE_URL = f"sqlite:///{os.path.join(INSTANCE_PATH, 'check8_fixed.db')}"
+    
+    # Fix Render's postgresql:// to use psycopg2 driver
+    if DATABASE_URL and DATABASE_URL.startswith("postgresql://"):
+        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
     
     SQLALCHEMY_DATABASE_URI = DATABASE_URL
     SQLALCHEMY_TRACK_MODIFICATIONS = False
