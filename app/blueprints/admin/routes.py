@@ -1,4 +1,9 @@
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for, jsonify
+import csv
+import io
+import sqlite3
+import tempfile
+
+from flask import Blueprint, abort, flash, redirect, render_template, request, url_for, jsonify, session
 from flask_login import current_user, login_required
 from sqlalchemy import or_
 from sqlalchemy.exc import OperationalError, IntegrityError
@@ -37,6 +42,201 @@ def _require_faculty():
         abort(403)
     if not current_user.assigned_faculties:
         abort(403)
+
+
+def _require_admin():
+    if not current_user.is_authenticated or not getattr(current_user, "is_admin", False):
+        abort(403)
+
+
+def _student_payload(row):
+    """Normalize CSV/database rows into the fields accepted by User."""
+    lowered = {str(key).strip().lower(): (value or "").strip() for key, value in row.items()}
+    student_number = lowered.get("student_number") or lowered.get("student id") or lowered.get("student_id")
+    email = lowered.get("email") or lowered.get("domain_account") or lowered.get("school_email")
+    last_name = (lowered.get("last_name") or lowered.get("ln") or "").upper()
+    first_name = (lowered.get("first_name") or lowered.get("fn") or "").upper()
+    middle_name = (lowered.get("middle_name") or lowered.get("mn") or "").upper()
+    full_name = lowered.get("full_name") or " ".join(
+        part for part in (first_name, middle_name, last_name) if part
+    )
+    return {
+        "student_number": student_number,
+        "email": email.lower(),
+        "last_name": last_name,
+        "first_name": first_name,
+        "middle_name": middle_name,
+        "full_name": full_name,
+        "department": lowered.get("department"),
+        "program": lowered.get("program"),
+    }
+
+
+def _validate_student_payloads(rows):
+    seen_ids = set()
+    seen_emails = set()
+    preview = []
+    for row_number, row in enumerate(rows, start=2):
+        record = _student_payload(row)
+        errors = []
+        student_number = record["student_number"]
+        email = record["email"]
+        if not student_number:
+            errors.append("missing Student ID")
+        elif student_number in seen_ids or db.session.execute(
+            db.select(User).where(User.student_number == student_number)
+        ).scalar_one_or_none():
+            errors.append("duplicate Student ID")
+        if not email or "@" not in email or not email.endswith("@gordoncollege.edu.ph"):
+            errors.append("invalid school email")
+        elif email in seen_emails or db.session.execute(
+            db.select(User).where(User.email == email)
+        ).scalar_one_or_none():
+            errors.append("duplicate domain account")
+        if not record["last_name"] or not record["first_name"]:
+            errors.append("missing name")
+        if student_number:
+            seen_ids.add(student_number)
+        if email:
+            seen_emails.add(email)
+        record["row_number"] = row_number
+        record["errors"] = errors
+        preview.append(record)
+    return preview
+
+
+@bp.get("/admin/dashboard")
+@login_required
+def admin_dashboard():
+    _require_admin()
+    students = db.session.execute(
+           db.select(User).where(User.role == Role.STUDENT.value).order_by(User.student_number.asc())
+    ).scalars().all()
+    instructors = db.session.execute(
+        db.select(User).where(User.role.in_([Role.INSTRUCTOR.value, Role.FACULTY.value])).order_by(User.full_name.asc())
+    ).scalars().all()
+    courses = db.session.execute(db.select(Course).order_by(Course.code.asc())).scalars().all()
+    groups = db.session.execute(db.select(StudentGroup).order_by(StudentGroup.name.asc())).scalars().all()
+    return render_template(
+        "admin/admin_dashboard.html",
+        students=students,
+        instructors=instructors,
+        courses=courses,
+        groups=groups,
+    )
+
+
+@bp.get("/admin/instructors")
+@login_required
+def instructors():
+    _require_admin()
+    users = db.session.execute(
+        db.select(User).where(User.role.in_([Role.INSTRUCTOR.value, Role.FACULTY.value])).order_by(User.full_name.asc())
+    ).scalars().all()
+    return render_template("admin/instructors.html", instructors=users)
+
+
+@bp.post("/admin/students/create")
+@login_required
+def create_student():
+    _require_admin()
+    record = _student_payload(request.form)
+    errors = _validate_student_payloads([request.form])[0]["errors"]
+    password = request.form.get("password") or "student123"
+    if errors:
+        flash("Student was not added: " + ", ".join(errors), "error")
+        return redirect(url_for("admin.admin_dashboard"))
+    user = User(role=Role.STUDENT.value, qr_salt=str(__import__("uuid").uuid4()), **record)
+    user.set_password(password)
+    db.session.add(user)
+    db.session.commit()
+    flash("Student added successfully.", "success")
+    return redirect(url_for("admin.admin_dashboard"))
+
+
+@bp.post("/admin/students/<int:student_id>/update")
+@login_required
+def update_student(student_id):
+    _require_admin()
+    student = db.session.get(User, student_id)
+    if not student or student.role != Role.STUDENT.value:
+        abort(404)
+    student.last_name = (request.form.get("last_name") or student.last_name or "").strip().upper()
+    student.first_name = (request.form.get("first_name") or student.first_name or "").strip().upper()
+    student.middle_name = (request.form.get("middle_name") or student.middle_name or "").strip().upper() or None
+    student.full_name = " ".join(part for part in (student.first_name, student.middle_name, student.last_name) if part)
+    student.department = (request.form.get("department") or student.department or "").strip() or None
+    student.program = (request.form.get("program") or student.program or "").strip() or None
+    db.session.commit()
+    flash("Student record updated.", "success")
+    return redirect(url_for("admin.admin_dashboard"))
+
+
+@bp.post("/admin/students/<int:student_id>/toggle")
+@login_required
+def toggle_student(student_id):
+    _require_admin()
+    student = db.session.get(User, student_id)
+    if not student or student.role != Role.STUDENT.value:
+        abort(404)
+    student.is_active = not student.is_active
+    db.session.commit()
+    flash("Student record " + ("activated." if student.is_active else "deactivated."), "success")
+    return redirect(url_for("admin.admin_dashboard"))
+
+
+@bp.post("/admin/import-students/preview")
+@login_required
+def import_students_preview():
+    _require_admin()
+    upload = request.files.get("file")
+    if not upload or not upload.filename:
+        flash("Select a CSV or SQLite database file.", "error")
+        return redirect(url_for("admin.admin_dashboard"))
+    try:
+        if upload.filename.lower().endswith(".csv"):
+            rows = list(csv.DictReader(io.StringIO(upload.read().decode("utf-8-sig"))))
+        elif upload.filename.lower().endswith(".db"):
+            with tempfile.NamedTemporaryFile(suffix=".db") as database_file:
+                database_file.write(upload.read())
+                database_file.flush()
+                connection = sqlite3.connect(database_file.name)
+                connection.row_factory = sqlite3.Row
+                table = connection.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+                ).fetchone()[0]
+                rows = [dict(row) for row in connection.execute(f'SELECT * FROM "{table}"')]
+                connection.close()
+        else:
+            raise ValueError("Only .csv and .db files are supported")
+        preview = _validate_student_payloads(rows)
+        session["student_import_preview"] = preview
+        return render_template("admin/import_students.html", preview=preview)
+    except Exception as error:
+        flash(f"Could not read import file: {error}", "error")
+        return redirect(url_for("admin.admin_dashboard"))
+
+
+@bp.post("/admin/import-students/confirm")
+@login_required
+def import_students_confirm():
+    _require_admin()
+    preview = session.pop("student_import_preview", [])
+    added = 0
+    for record in preview:
+        if record["errors"]:
+            continue
+        user = User(
+            role=Role.STUDENT.value,
+            qr_salt=str(__import__("uuid").uuid4()),
+            **{key: record.get(key) for key in ("student_number", "email", "last_name", "first_name", "middle_name", "full_name", "department", "program")},
+        )
+        user.set_password("student123")
+        db.session.add(user)
+        added += 1
+    db.session.commit()
+    flash(f"Imported {added} valid student record(s).", "success")
+    return redirect(url_for("admin.admin_dashboard"))
 
 
 def _require_faculty_json(f):
@@ -158,6 +358,13 @@ def dashboard():
                          pending_count=pending_count,
                          approved_count=approved_count,
                          rejected_count=rejected_count)
+
+
+@bp.get("/instructor/dashboard")
+@login_required
+def instructor_dashboard():
+    """Instructor view for assigned clearance work."""
+    return dashboard()
 
 
 @bp.post("/set-status")
@@ -428,7 +635,7 @@ def search_students():
 @login_required
 def add_student():
     """Add a student to a specific course's clearance list."""
-    _require_faculty()
+    _require_admin()
     student_id_str = request.form.get("student_id")
     course_id_str = request.form.get("course_id")
     student_id = int(student_id_str) if student_id_str else None
@@ -499,7 +706,7 @@ def add_student():
 @login_required
 def bulk_add_students():
     """Bulk add multiple students to a course's clearance list."""
-    _require_faculty()
+    _require_admin()
     
     try:
         data = request.get_json()
@@ -582,7 +789,7 @@ def bulk_add_students():
 @login_required
 def remove_student():
     """Remove a student from a specific course's clearance list."""
-    _require_faculty()
+    _require_admin()
     student_id_str = request.form.get("student_id")
     course_id_str = request.form.get("course_id")
     student_id = int(student_id_str) if student_id_str else None
@@ -648,23 +855,24 @@ def remove_student():
 @login_required
 def list_groups():
     """Display all student groups created by the current faculty member."""
-    _require_faculty()
+    _require_admin()
     
-    # Get all courses assigned to this user
-    assigned_courses = db.session.execute(
-        db.select(Course).join(InstructorCourse).where(InstructorCourse.user_id == current_user.id)
-    ).scalars().all()
-    assigned_course_ids = [c.id for c in assigned_courses]
-    
-    # Get all groups created by this user for assigned courses
-    groups = db.session.execute(
-        db.select(StudentGroup)
-        .where(
-            StudentGroup.created_by_user_id == current_user.id,
-            StudentGroup.course_id.in_(assigned_course_ids)
-        )
-        .order_by(StudentGroup.created_at.desc())
-    ).scalars().all()
+    if current_user.is_admin:
+        assigned_courses = db.session.execute(db.select(Course).order_by(Course.code.asc())).scalars().all()
+        groups = db.session.execute(db.select(StudentGroup).order_by(StudentGroup.created_at.desc())).scalars().all()
+    else:
+        assigned_courses = db.session.execute(
+            db.select(Course).join(InstructorCourse).where(InstructorCourse.user_id == current_user.id)
+        ).scalars().all()
+        assigned_course_ids = [c.id for c in assigned_courses]
+        groups = db.session.execute(
+            db.select(StudentGroup)
+            .where(
+                StudentGroup.created_by_user_id == current_user.id,
+                StudentGroup.course_id.in_(assigned_course_ids)
+            )
+            .order_by(StudentGroup.created_at.desc())
+        ).scalars().all()
     
     return render_template("admin/groups.html", groups=groups, assigned_courses=assigned_courses)
 
@@ -673,7 +881,7 @@ def list_groups():
 @login_required
 def create_group():
     """Create a new student group for a specific course."""
-    _require_faculty()
+    _require_admin()
     
     name = (request.form.get("name") or "").strip()
     description = (request.form.get("description") or "").strip() or None
@@ -698,15 +906,14 @@ def create_group():
         flash("Course not found.", "error")
         return redirect(url_for("admin.list_groups"))
     
-    # Check if user is assigned to this course
     instructor_assignment = db.session.execute(
         db.select(InstructorCourse).where(
             InstructorCourse.user_id == current_user.id,
             InstructorCourse.course_id == course_id
         )
     ).scalar_one_or_none()
-    
-    if not instructor_assignment:
+
+    if not current_user.is_admin and not instructor_assignment:
         flash("You don't have permission to create a group for this course.", "error")
         return redirect(url_for("admin.list_groups"))
     
@@ -744,7 +951,7 @@ def create_group():
 @login_required
 def delete_group(group_id):
     """Delete a student group."""
-    _require_faculty()
+    _require_admin()
     
     group = db.session.get(StudentGroup, group_id)
     if not group:
@@ -771,7 +978,7 @@ def delete_group(group_id):
 @login_required
 def view_group(group_id):
     """View a specific student group and its members."""
-    _require_faculty()
+    _require_admin()
     
     group = db.session.get(StudentGroup, group_id)
     if not group:
@@ -844,7 +1051,7 @@ def view_group(group_id):
 @login_required
 def add_students_to_group():
     """Add multiple students to a group at once."""
-    _require_faculty()
+    _require_admin()
     
     group_id_str = request.form.get("group_id")
     group_id = int(group_id_str) if group_id_str else None
@@ -974,7 +1181,7 @@ def add_students_to_group():
 @login_required
 def remove_student_from_group(group_id, student_id):
     """Remove a student from a group."""
-    _require_faculty()
+    _require_admin()
     
     group = db.session.get(StudentGroup, group_id)
     if not group:

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard | CHECK8{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+{% block content %}
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <a class="admin-side-brand" href="{{ url_for('admin.admin_dashboard') }}"><span class="admin-side-brand__mark">C8</span><span><b>CHECK8</b><small>QR-enabled clearance<br>management</small></span></a>
+    <nav class="admin-nav">
+      <a class="admin-nav__link admin-nav__link--active" href="{{ url_for('admin.admin_dashboard') }}"><span>⌂</span>Dashboard</a>
+      <a class="admin-nav__link" href="#students"><span>♧</span>Students</a>
+      <a class="admin-nav__link" href="{{ url_for('admin.list_groups') }}"><span>♧</span>Groups &amp; Classes</a>
+      <a class="admin-nav__link" href="{{ url_for('admin.instructors') }}"><span>♙</span>Instructors</a>
+      <a class="admin-nav__link" href="#accounts"><span>♢</span>Accounts</a>
+    </nav>
+    <div class="admin-profile"><span class="admin-profile__icon">♢</span><span><b>{{ current_user.full_name }}</b><small>{{ current_user.email }}</small></span></div>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-topbar"><div></div><div class="admin-topbar__actions"><span class="admin-bell">♧<i>3</i></span><strong>Admin Dashboard</strong><form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}" /><button type="submit">Logout&nbsp; ↪</button></form></div></header>
+    <div class="admin-content">
+      <div class="admin-title"><h1>Admin Dashboard</h1><p>Manage students, classes, groups, courses, instructors, and accounts.</p></div>
+      <div class="admin-summary">
+        <a class="admin-summary-card admin-summary-card--active" href="#students"><span>♧</span><b>Students</b><small>Manage student records</small></a>
+        <a class="admin-summary-card" href="#import"><span>⇧</span><b>Import Students</b><small>Upload CSV or SQLite</small></a>
+        <a class="admin-summary-card" href="{{ url_for('admin.list_groups') }}"><span>♧</span><b>Groups &amp; Classes</b><small>Organize groups/classes</small></a>
+        <a class="admin-summary-card" href="{{ url_for('admin.instructors') }}"><span>♙</span><b>Instructors</b><small>Manage instructors</small></a>
+      </div>
+
+      <section id="students" class="admin-panel">
+        <div class="admin-panel__heading"><div><h2>Student Management</h2><p>{{ students|length }} student record(s)</p></div></div>
+        <form method="post" action="{{ url_for('admin.create_student') }}" class="admin-create-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <div class="admin-form-field"><label>LAST NAME (LN)</label><input class="input input--uppercase" name="last_name" placeholder="Enter last name" required /></div>
+          <div class="admin-form-field"><label>FIRST NAME (FN)</label><input class="input input--uppercase" name="first_name" placeholder="Enter first name" required /></div>
+          <div class="admin-form-field"><label>MIDDLE NAME (MN)</label><input class="input input--uppercase" name="middle_name" placeholder="Enter middle name" /></div>
+          <div class="admin-form-field"><label>STUDENT ID NUMBER</label><input class="input" name="student_number" placeholder="Enter student ID" required /></div>
+          <div class="admin-form-field admin-form-field--email"><label>EMAIL</label><input class="input" name="email" placeholder="student@gordoncollege.edu.ph" type="email" required /></div>
+          <div class="admin-form-field"><label>DEPARTMENT</label><input class="input" name="department" placeholder="Select department" /></div>
+          <div class="admin-form-field"><label>PROGRAM</label><input class="input" name="program" placeholder="Select program" /></div>
+          <div class="admin-form-field admin-form-field--password"><label>TEMPORARY PASSWORD</label><div class="password-field"><input id="temporary_password" class="input" name="password" placeholder="Enter temporary password" type="password" /><button type="button" class="password-toggle" data-password-toggle data-password-target="temporary_password" aria-label="Show password" aria-pressed="false">👁</button></div></div>
+          <button class="btn admin-create-submit" type="submit">＋ &nbsp; Add Student</button>
+        </form>
+      </section>
+
+      <section class="admin-panel admin-students-panel"><div class="admin-panel__heading"><div><h2>View Students</h2></div><label class="admin-search">⌕<input placeholder="Search students..." /></label></div>
+        <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>STUDENT ID</th><th>NAME</th><th>EMAIL</th><th>DEPARTMENT</th><th>PROGRAM</th><th>STATUS</th><th>ACTIONS</th></tr></thead><tbody>{% for student in students %}<tr><td>{{ student.student_number }}</td><td><b>{{ student.full_name }}</b></td><td>{{ student.email }}</td><td>{{ student.department or '—' }}</td><td>{{ student.program or '—' }}</td><td><span class="admin-status admin-status--{{ 'active' if student.is_active else 'inactive' }}">{{ 'Active' if student.is_active else 'Inactive' }}</span></td><td><form method="post" action="{{ url_for('admin.toggle_student', student_id=student.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}" /><button class="admin-action" type="submit">{{ 'Deactivate' if student.is_active else 'Activate' }}</button></form></td></tr>{% else %}<tr><td colspan="7">No students yet.</td></tr>{% endfor %}</tbody></table></div>
+        <div class="admin-table-footer">Showing 1 to {{ students|length }} of {{ students|length }} students <span>‹ &nbsp; <b>1</b> &nbsp; ›</span></div>
+      </section>
+
+      <section id="import" class="admin-panel admin-import-panel"><div class="admin-panel__heading"><div><h2>Import Students</h2><p>Upload a CSV or compatible SQLite .db file to preview, validate, and confirm records.</p></div></div><form method="post" action="{{ url_for('admin.import_students_preview') }}" enctype="multipart/form-data" class="admin-import-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}" /><input type="file" name="file" accept=".csv,.db" required /><button class="btn admin-create-submit" type="submit">⇧ &nbsp; Import Students</button></form></section>
+    </div>
+  </main>
+</div>
+{% endblock %}

@@ -6,18 +6,26 @@
         const allView = document.getElementById('all-view');
         const tabGroups = document.getElementById('tab-groups');
         const tabAll = document.getElementById('tab-all');
+        const nextView = tab === 'groups' ? groupsView : allView;
+        const currentView = tab === 'groups' ? allView : groupsView;
+
+        if (nextView.classList.contains('dashboard-view--active')) return;
+
+        currentView.classList.remove('dashboard-view--active');
+        currentView.classList.add('dashboard-view--leaving');
 
         if (tab === 'groups') {
-            groupsView.style.display = 'block';
-            allView.style.display = 'none';
             tabGroups.classList.add('is-active');
             tabAll.classList.remove('is-active');
         } else if (tab === 'all') {
-            groupsView.style.display = 'none';
-            allView.style.display = 'block';
             tabAll.classList.add('is-active');
             tabGroups.classList.remove('is-active');
         }
+
+        window.setTimeout(() => {
+            currentView.classList.remove('dashboard-view--leaving');
+            nextView.classList.add('dashboard-view--active');
+        }, 180);
 
         window.scrollTo({
             top: 0,
@@ -279,7 +287,7 @@
     </div>
 
     <!-- GROUPS VIEW -->
-    <div id="groups-view" style="display: block;">
+    <div id="groups-view" class="dashboard-view dashboard-view--active">
         {% if groups_data %}
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
             {% for group_item in groups_data %}
@@ -316,7 +324,7 @@
     </div>
 
     <!-- ALL STUDENTS VIEW -->
-    <div id="all-view" style="display: none;">
+    <div id="all-view" class="dashboard-view">
         <!-- Add Students Section -->
         <div style="background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%); border: 1px solid #fb923c; border-radius: 0.5rem; padding: 2.5rem; margin-bottom: 3rem;">
             <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
@@ -470,6 +478,40 @@
     .dashboard-tabs {
         border-bottom: 1px solid #edd9c4 !important;
         padding-bottom: 0.25rem;
+    }
+
+    .dashboard-view {
+        display: none;
+        opacity: 0;
+        transform: translateY(8px);
+        pointer-events: none;
+    }
+
+    .dashboard-view--active {
+        display: block;
+        animation: dashboardTabIn 0.38s cubic-bezier(.22, 1, .36, 1) both;
+        pointer-events: auto;
+    }
+
+    .dashboard-view--leaving {
+        display: block;
+        animation: dashboardTabOut 0.18s ease both;
+        pointer-events: none;
+    }
+
+    @keyframes dashboardTabIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes dashboardTabOut {
+        from { opacity: 1; transform: translateY(0); }
+        to { opacity: 0; transform: translateY(-5px); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .dashboard-view--active,
+        .dashboard-view--leaving { animation: none; }
     }
 
     .btn--tab {

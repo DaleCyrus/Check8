@@ -36,6 +36,32 @@ function setupCopyButtons() {
   });
 }
 
+function setupPasswordPeek() {
+  document.querySelectorAll("[data-password-toggle]").forEach((button) => {
+    const input = document.getElementById(button.dataset.passwordTarget);
+    if (!input) return;
+    let hideTimer;
+
+    button.addEventListener("click", () => {
+      clearTimeout(hideTimer);
+      const showing = input.type === "text";
+      input.type = showing ? "password" : "text";
+      button.textContent = showing ? "👁" : "🙈";
+      button.setAttribute("aria-label", showing ? "Show password" : "Hide password");
+      button.setAttribute("aria-pressed", String(!showing));
+
+      if (!showing) {
+        hideTimer = setTimeout(() => {
+          input.type = "password";
+          button.textContent = "👁";
+          button.setAttribute("aria-label", "Show password");
+          button.setAttribute("aria-pressed", "false");
+        }, 1500);
+      }
+    });
+  });
+}
+
 async function verifyTokenViaJson(token) {
   const url = window.CHECK8_VERIFY_JSON_URL;
   if (!url) return null;
@@ -400,6 +426,7 @@ function setupQrScanner() {
 document.addEventListener("DOMContentLoaded", () => {
   setupLoginForm();
   setupCopyButtons();
+  setupPasswordPeek();
   setupFormLoadingStates();
   // Don't auto-setup QR scanner here - let verify.html handle it with proper timing
 });

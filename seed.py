@@ -15,6 +15,8 @@ FACULTY_DEFS: list[tuple[str, str, str, str, str]] = [
     ("CS Department", "csdept", "CS Department Office", "csdept@institution.edu", "office123"),
 ]
 
+ADMIN_DEF = ("admin@gordoncollege.edu.ph", "admin123")
+
 STUDENT_DEFS: list[tuple[str, str, str, str, str, str]] = [
     # (student_number, full_name, department, program, email, password)
     ("2022-0001", "Gian Karlo Student", "College of Computer Studies", "Bachelor of Science in Computer Science", "2022-0001@student.edu", "student123"),
@@ -93,6 +95,25 @@ def get_or_create_faculty_user(username: str, full_name: str, email: str, passwo
     return u
 
 
+def get_or_create_admin(email: str, password: str) -> User:
+    user = db.session.execute(db.select(User).where(User.email == email)).scalar_one_or_none()
+    if user:
+        user.role = Role.ADMIN.value
+        db.session.commit()
+        return user
+    user = User(
+        role=Role.ADMIN.value,
+        username=email.split("@", 1)[0],
+        full_name="System Administrator",
+        email=email,
+        student_number=None,
+    )
+    user.set_password(password)
+    db.session.add(user)
+    db.session.commit()
+    return user
+
+
 def get_or_create_course(code: str, name: str, faculty: Faculty) -> Course:
     course = db.session.execute(db.select(Course).where(Course.code == code)).scalar_one_or_none()
     if course:
@@ -140,6 +161,7 @@ def main():
             db.create_all()
 
         faculties_by_name: dict[str, Faculty] = {}
+        get_or_create_admin(*ADMIN_DEF)
         for faculty_name, username, full_name, email, password in FACULTY_DEFS:
             faculty = get_or_create_faculty(faculty_name)
             faculties_by_name[faculty_name] = faculty
@@ -173,6 +195,7 @@ def main():
             print(f"Student: {stud_num} ({department} - {program}) / {email} / {password}")
         for faculty_name, username, _full_name, email, password in FACULTY_DEFS:
             print(f"Faculty: {username} ({faculty_name}) / {email} / {password}")
+        print(f"Admin: {ADMIN_DEF[0]} / {ADMIN_DEF[1]}")
         for course_code, course_name, faculty_name in COURSES_DEFS:
             print(f"Course: {course_code} - {course_name} ({faculty_name})")
 

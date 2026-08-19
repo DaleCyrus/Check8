@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Instructors | CHECK8{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+{% block content %}
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <a class="admin-side-brand" href="{{ url_for('admin.admin_dashboard') }}"><span class="admin-side-brand__mark">C8</span><span><b>CHECK8</b><small>QR-enabled clearance<br>management</small></span></a>
+    <nav class="admin-nav">
+      <a class="admin-nav__link" href="{{ url_for('admin.admin_dashboard') }}"><span>⌂</span>Dashboard</a>
+      <a class="admin-nav__link" href="{{ url_for('admin.admin_dashboard') }}#students"><span>♧</span>Students</a>
+      <a class="admin-nav__link" href="{{ url_for('admin.list_groups') }}"><span>♧</span>Groups &amp; Classes</a>
+      <a class="admin-nav__link admin-nav__link--active" href="{{ url_for('admin.instructors') }}"><span>♙</span>Instructors</a>
+      <a class="admin-nav__link" href="{{ url_for('admin.admin_dashboard') }}#accounts"><span>♢</span>Accounts</a>
+    </nav>
+    <div class="admin-profile"><span class="admin-profile__icon">♢</span><span><b>{{ current_user.full_name }}</b><small>{{ current_user.email }}</small></span></div>
+  </aside>
+
+  <main class="admin-main">
+    <header class="admin-topbar"><div></div><div class="admin-topbar__actions"><span class="admin-bell">♧<i>3</i></span><a href="{{ url_for('admin.admin_dashboard') }}">Admin Dashboard</a><form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}" /><button type="submit">Logout&nbsp; ↪</button></form></div></header>
+    <div class="admin-content instructor-content">
+      <div class="admin-title"><h1>Instructors</h1><p>Assign courses and review instructor accounts from the administrative area.</p></div>
+      {% set assigned_course_total = namespace(value=0) %}{% for instructor in instructors %}{% set assigned_course_total.value = assigned_course_total.value + instructor.assigned_courses|length %}{% endfor %}
+      <div class="admin-summary instructor-summary">
+        <div class="admin-summary-card admin-summary-card--active"><span>♙</span><b>{{ instructors|length }}</b><small>Total instructors</small></div>
+        <div class="admin-summary-card"><span>▣</span><b>{{ instructors|selectattr('employee_number')|list|length }}</b><small>Registered employee IDs</small></div>
+        <div class="admin-summary-card"><span>♧</span><b>{{ assigned_course_total.value }}</b><small>Assigned courses</small></div>
+      </div>
+      <section class="admin-panel instructor-panel">
+        <div class="admin-panel__heading"><div><h2>Instructor Accounts</h2><p>Review instructor profiles and current course assignments.</p></div><label class="admin-search">⌕<input placeholder="Search instructors..." /></label></div>
+        <div class="admin-table-wrap"><table class="admin-table instructor-table"><thead><tr><th>EMPLOYEE ID</th><th>INSTRUCTOR</th><th>EMAIL</th><th>ROLE</th><th>ASSIGNED COURSES</th><th>STATUS</th></tr></thead><tbody>{% for instructor in instructors %}<tr>
+          <td><span class="instructor-id">{{ instructor.employee_number or 'Legacy account' }}</span></td><td><div class="instructor-name"><span>{{ instructor.full_name[:1]|upper }}</span><b>{{ instructor.full_name }}</b></div></td><td>{{ instructor.email }}</td><td><span class="instructor-role">Instructor</span></td><td><b class="course-count">{{ instructor.assigned_courses|length }}</b> course(s)</td><td><span class="admin-status admin-status--active">Active</span></td>
+        </tr>{% else %}<tr><td colspan="6">No instructors registered.</td></tr>{% endfor %}</tbody></table></div>
+        <div class="admin-table-footer">Showing 1 to {{ instructors|length }} of {{ instructors|length }} instructors <span>‹ &nbsp; <b>1</b> &nbsp; ›</span></div>
+      </section>
+    </div>
+  </main>
+</div>
+{% endblock %}

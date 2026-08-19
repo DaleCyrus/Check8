@@ -1,136 +1,50 @@
 {% extends "base.html" %}
-{% block title %}Student Groups • CHECK8{% endblock %}
-
+{% block title %}Groups & Classes | CHECK8{% endblock %}
+{% block body_class %}admin-page{% endblock %}
 {% block content %}
-  <section class="card">
-    <div style="margin-bottom: 2rem;">
-      <h1 class="h1">Classes</h1>
-      <p class="muted">Organize students into classes for easier bulk clearance management.</p>
-    </div>
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <a class="admin-side-brand" href="{{ url_for('admin.admin_dashboard') }}"><span class="admin-side-brand__mark">C8</span><span><b>CHECK8</b><small>QR-enabled clearance<br>management</small></span></a>
+    <nav class="admin-nav">
+      <a class="admin-nav__link" href="{{ url_for('admin.admin_dashboard') }}"><span>⌂</span>Dashboard</a>
+      <a class="admin-nav__link" href="{{ url_for('admin.admin_dashboard') }}#students"><span>♧</span>Students</a>
+      <a class="admin-nav__link admin-nav__link--active" href="{{ url_for('admin.list_groups') }}"><span>♧</span>Groups &amp; Classes</a>
+      <a class="admin-nav__link" href="{{ url_for('admin.instructors') }}"><span>♙</span>Instructors</a>
+      <a class="admin-nav__link" href="{{ url_for('admin.admin_dashboard') }}#accounts"><span>♢</span>Accounts</a>
+    </nav>
+    <div class="admin-profile"><span class="admin-profile__icon">♢</span><span><b>{{ current_user.full_name }}</b><small>{{ current_user.email }}</small></span></div>
+  </aside>
 
-    <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 2rem; margin-bottom: 2rem;">
-      <!-- Create New Class Form -->
-      <div style="background: linear-gradient(135deg, #fff9f0 0%, #ffe8d1 100%); border: 1px solid rgba(255, 152, 0, 0.3); border-radius: 0.75rem; padding: 2rem;">
-        <h2 class="h2" style="margin-top: 0; color: var(--accent-dark);">Create New Class</h2>
-        <p class="muted" style="margin-bottom: 1.5rem;">Add a new class to organize students.</p>
-        
-        <form method="post" action="{{ url_for('admin.create_group') }}" style="display: flex; flex-direction: column; gap: 1.2rem;">
+  <main class="admin-main">
+    <header class="admin-topbar"><div></div><div class="admin-topbar__actions"><span class="admin-bell">♧<i>3</i></span><a href="{{ url_for('admin.admin_dashboard') }}">Admin Dashboard</a><form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}" /><button type="submit">Logout&nbsp; ↪</button></form></div></header>
+    <div class="admin-content groups-content">
+      <div class="admin-title"><h1>Groups &amp; Classes</h1><p>Organize students into classes for easier bulk clearance management.</p></div>
+      {% set membership_total = namespace(value=0) %}{% for group in groups %}{% set membership_total.value = membership_total.value + group.members|length %}{% endfor %}
+      <div class="admin-summary groups-summary">
+        <div class="admin-summary-card admin-summary-card--active"><span>♧</span><b>{{ groups|length }}</b><small>Total classes</small></div>
+        <div class="admin-summary-card"><span>▣</span><b>{{ assigned_courses|length }}</b><small>Available courses</small></div>
+        <div class="admin-summary-card"><span>♙</span><b>{{ membership_total.value }}</b><small>Student memberships</small></div>
+      </div>
+
+      <section class="admin-panel groups-create-panel">
+        <div class="admin-panel__heading"><div><h2>Create New Class</h2><p>Add a class to organize students and clearance work.</p></div></div>
+        <form method="post" action="{{ url_for('admin.create_group') }}" class="groups-create-form">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <div>
-            <label class="label">Select Course</label>
-            <select name="course_id" class="input" required>
-              <option value="">-- Choose a course --</option>
-              {% for course in assigned_courses %}
-                <option value="{{ course.id }}">{{ course.code }} - {{ course.name }}</option>
-              {% endfor %}
-            </select>
-          </div>
-
-          <!-- Class Name -->
-          <div>
-            <label class="label">Class Name</label>
-            <input type="text" name="name" class="input" placeholder="Block A, Group 1, etc." required maxlength="255" />
-          </div>
-
-          <!-- Class Description -->
-          <div>
-            <label class="label">Description (Optional)</label>
-            <textarea name="description" class="input" placeholder="Brief description of this class..." rows="3" maxlength="500" style="resize: vertical;"></textarea>
-          </div>
-
-          <button type="submit" class="btn" style="width: 100%; margin-top: 0.5rem;">Create Class</button>
+          <div class="admin-form-field"><label>COURSE</label><select name="course_id" class="input" required><option value="">Choose a course</option>{% for course in assigned_courses %}<option value="{{ course.id }}">{{ course.code }} - {{ course.name }}</option>{% endfor %}</select></div>
+          <div class="admin-form-field"><label>CLASS NAME</label><input type="text" name="name" class="input" placeholder="Block A, Group 1, etc." required maxlength="255" /></div>
+          <div class="admin-form-field groups-description"><label>DESCRIPTION (OPTIONAL)</label><input type="text" name="description" class="input" placeholder="Brief description of this class" maxlength="500" /></div>
+          <button type="submit" class="btn admin-create-submit">＋ &nbsp; Create Class</button>
         </form>
-      </div>
+      </section>
 
-      <!-- Classes List Preview -->
-      <div>
-        <h2 class="h2" style="margin-top: 0;">Your Classes</h2>
-        
-        {% if groups %}
-          <div style="display: flex; flex-direction: column; gap: 1rem; max-height: 450px; overflow-y: auto;">
-            {% for group in groups %}
-              <div style="background: white; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 1.25rem; hover: shadow 0 2px 8px rgba(0,0,0,0.1); transition: box-shadow 0.2s;">
-                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
-                  <h3 style="margin: 0; font-size: 1rem; color: var(--text);">{{ group.name }}</h3>
-                  <span class="badge" style="background: #ffe0b2; color: #e65100; padding: 0.35rem 0.75rem;">{{ group.members|length }}</span>
-                </div>
-                <p class="muted small" style="margin: 0 0 0.75rem 0;">{{ group.course.code }}</p>
-                {% if group.description %}
-                  <p class="muted small" style="margin: 0 0 1rem 0; line-height: 1.4;">{{ group.description }}</p>
-                {% endif %}
-                <div style="display: flex; gap: 0.5rem;">
-                  <a href="{{ url_for('admin.view_group', group_id=group.id) }}" class="btn btn--sm">Manage</a>
-                  <form method="post" action="{{ url_for('admin.delete_group', group_id=group.id) }}" style="display: inline;" onsubmit="return confirm('Delete this class?');">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                    <button type="submit" class="btn btn--sm btn--ghost" style="color: #dc2626;">Delete</button>
-                  </form>
-                </div>
-              </div>
-            {% endfor %}
-          </div>
-        {% else %}
-          <div style="background: linear-gradient(135deg, #f5f5f5 0%, #fafafa 100%); border: 2px dashed #d1d5db; border-radius: 0.75rem; padding: 2rem; text-align: center;">
-            <p style="font-size: 1rem; color: var(--text); margin: 0 0 0.5rem 0; font-weight: 500;">No Classes Yet</p>
-            <p class="muted" style="margin: 0; font-size: 0.9rem;">Create a class using the form on the left.</p>
-          </div>
-        {% endif %}
-      </div>
+      <section class="admin-panel instructor-panel groups-list-panel">
+        <div class="admin-panel__heading"><div><h2>All Classes</h2><p>Manage groups, assign students, and monitor class clearance.</p></div><label class="admin-search">⌕<input placeholder="Search classes..." /></label></div>
+        <div class="admin-table-wrap"><table class="admin-table groups-table"><thead><tr><th>CLASS NAME</th><th>COURSE</th><th>DESCRIPTION</th><th>STUDENTS</th><th>CREATED</th><th>ACTIONS</th></tr></thead><tbody>{% for group in groups %}<tr>
+          <td><div class="group-name"><span>♧</span><b>{{ group.name }}</b></div></td><td><span class="group-course">{{ group.course.code }}</span><small>{{ group.course.name }}</small></td><td>{{ group.description or 'No description' }}</td><td><span class="group-count">{{ group.members|length }}</span> student(s)</td><td>{{ group.created_at.strftime('%b %d, %Y') if group.created_at else '—' }}</td><td><div class="group-actions"><a href="{{ url_for('admin.view_group', group_id=group.id) }}" class="admin-action">Manage</a><form method="post" action="{{ url_for('admin.delete_group', group_id=group.id) }}" onsubmit="return confirm('Delete this class?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}" /><button type="submit" class="admin-action group-delete">Delete</button></form></div></td>
+        </tr>{% else %}<tr><td colspan="6">No classes yet. Create your first class above.</td></tr>{% endfor %}</tbody></table></div>
+        <div class="admin-table-footer">Showing 1 to {{ groups|length }} of {{ groups|length }} classes <span>‹ &nbsp; <b>1</b> &nbsp; ›</span></div>
+      </section>
     </div>
-
-    <div style="padding-top: 1.5rem; border-top: 1px solid #e5e7eb;">
-      <a href="{{ url_for('admin.dashboard') }}" class="btn btn--ghost">Back to Dashboard</a>
-    </div>
-  </section>
-
-  <style>
-    .label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: 600;
-      font-size: 0.9rem;
-      color: #1f2937;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: #ffe0b2;
-      color: #e65100;
-      padding: 0.35rem 0.75rem;
-      border-radius: 9999px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      min-width: 40px;
-    }
-
-    @media (max-width: 1024px) {
-      div[style*="grid-template-columns: 1fr 1.2fr"] {
-        grid-template-columns: 1fr !important;
-      }
-    }
-
-    @media (max-width: 768px) {
-      .card {
-        padding: 1.5rem !important;
-      }
-
-      h2.h2 {
-        font-size: 1.1rem;
-      }
-
-      div[style*="grid-template-columns: 1fr 1.2fr"] {
-        grid-template-columns: 1fr !important;
-        gap: 1.5rem !important;
-      }
-
-      div[style*="max-height: 450px"] {
-        max-height: none !important;
-      }
-
-      div[style*="padding: 2rem"] {
-        padding: 1.5rem !important;
-      }
-    }
-  </style>
+  </main>
+</div>
 {% endblock %}

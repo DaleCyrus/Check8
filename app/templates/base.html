@@ -10,7 +10,7 @@
     <script defer src="{{ url_for('static', filename='app.js') }}"></script>
 </head>
 
-<body>
+<body class="{% block body_class %}{% endblock %}">
     <header class="topbar">
         <div class="container topbar__inner">
             <div class="brand">
@@ -23,8 +23,12 @@
 
             <nav class="nav">
                 {% if current_user.is_authenticated %} {% if current_user.is_student %}
-                <a class="nav__link" href="{{ url_for('student.dashboard') }}">Dashboard</a> {% else %}
-                <a class="nav__link" href="{{ url_for('admin.dashboard') }}">Faculty Dashboard</a> {% endif %}
+                <a class="nav__link" href="{{ url_for('student.dashboard') }}">Dashboard</a>
+                {% elif current_user.is_admin %}
+                <a class="nav__link" href="{{ url_for('admin.admin_dashboard') }}">Admin Dashboard</a>
+                {% else %}
+                <a class="nav__link" href="{{ url_for('admin.instructor_dashboard') }}">Instructor Dashboard</a>
+                {% endif %}
                 <form class="nav__logout" method="post" action="{{ url_for('auth.logout') }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                     <button class="btn btn--ghost" type="submit">Logout</button>

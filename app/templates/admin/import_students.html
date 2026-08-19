@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Import Students | CHECK8{% endblock %}
+{% block content %}
+<section class="card">
+  <h1 class="h1">Import Students Preview</h1>
+  <p class="muted">Only valid records will be added after confirmation. Invalid rows are skipped.</p>
+  <div style="overflow-x:auto;">
+    <table class="table">
+      <thead><tr><th>Row</th><th>Student ID</th><th>Name</th><th>Email</th><th>Validation</th></tr></thead>
+      <tbody>{% for row in preview %}<tr>
+        <td>{{ row.row_number }}</td><td>{{ row.student_number or '—' }}</td>
+        <td>{{ row.full_name or '—' }}</td><td>{{ row.email or '—' }}</td>
+        <td>{% if row.errors %}<span style="color:#b42318;">{{ row.errors|join(', ') }}</span>{% else %}<span style="color:#16794a;">Valid</span>{% endif %}</td>
+      </tr>{% else %}<tr><td colspan="5">No records found.</td></tr>{% endfor %}</tbody>
+    </table>
+  </div>
+  <form method="post" action="{{ url_for('admin.import_students_confirm') }}" style="margin-top:18px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+    <button class="btn" type="submit">Confirm Import</button>
+    <a class="btn btn--ghost" href="{{ url_for('admin.admin_dashboard') }}">Cancel</a>
+  </form>
+</section>
+{% endblock %}

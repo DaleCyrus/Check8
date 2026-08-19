@@ -1,54 +1,25 @@
-{% extends "base.html" %} {% block title %}Student Sign up • CHECK8{% endblock %} {% block content %}
-<div class="card">
-    <button type="button" class="btn btn--ghost" onclick="window.history.back()" style="margin-bottom: 12px;">
-      ← Back
-    </button>
-    <h1 class="h1">Student Sign up</h1>
-    <p class="muted">Create a student account to access your clearance dashboard.</p>
-
-    <form method="post" class="form">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <input id="student_number" name="student_number" class="input" placeholder="e.g. 20xxxxxxx" value="{{ student_number or '' }}" required />
-
-        <label class="label" for="full_name">Full name</label>
-        <input id="full_name" name="full_name" class="input" placeholder="e.g. Juan Dela Cruz" value="{{ full_name or '' }}" required />
-
-        <label class="label" for="email">Institutional Email</label>
-        <div class="input-group">
-            <input id="email_username" class="input-group__input" type="text" placeholder="e.g. 20xxxxxxx" required />
-            <span class="input-group__suffix">@gordoncollege.edu.ph</span>
-        </div>
-        <input id="email" name="email" type="hidden" value="{{ email or '' }}" />
-
-        <label class="label" for="department">Department</label>
-        <select id="department" name="department" class="input" required>
-        <option value="">Select Department</option>
-        <option value="College of Computer Studies" {% if department == "College of Computer Studies" %}selected{% endif %}>College of Computer Studies</option>
-      </select>
-
-        <label class="label" for="program">Program</label>
-        <select id="program" name="program" class="input" required>
-        <option value="">Select Program</option>
-        <option value="Bachelor of Science in Computer Science" {% if program == "Bachelor of Science in Computer Science" %}selected{% endif %}>Bachelor of Science in Computer Science</option>
-        <option value="Bachelor of Science in Information Technology" {% if program == "Bachelor of Science in Information Technology" %}selected{% endif %}>Bachelor of Science in Information Technology</option>
-      </select>
-
-        <label class="label" for="password">Password</label>
-        <input id="password" name="password" type="password" class="input" autocomplete="new-password" required />
-
-        <label class="label" for="confirm_password">Confirm password</label>
-        <input id="confirm_password" name="confirm_password" type="password" class="input" autocomplete="new-password" required />
-
-        <button class="btn" type="submit">Create student account</button>
-    </form>
-
-    <div class="divider"></div>
-
-    <div class="muted small">
-        Already have an account?
-        <a href="{{ url_for('auth.login') }}">Back to login</a>.
-    </div>
-</div>
+{% extends "base.html" %}
+{% block title %}Student Sign Up | CHECK8{% endblock %}
+{% block body_class %}signup-form-page{% endblock %}
+{% block content %}
+<div class="signup-form-shell"><section class="signup-form-card">
+  <button type="button" class="signup-back" onclick="window.history.back()"><span>←</span> Back</button>
+  <div class="signup-form-heading"><div class="signup-form-icon">⌂</div><div><h1>Student Sign Up</h1><p>Create a student account to access your clearance dashboard.</p></div></div>
+  <form method="post" class="signup-form-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+    <div class="signup-field"><label class="label" for="last_name">Last Name <span>(LN)</span></label><input id="last_name" name="last_name" class="input input--uppercase" placeholder="Enter last name" value="{{ last_name or '' }}" required /></div>
+    <div class="signup-field"><label class="label" for="first_name">First Name <span>(FN)</span></label><input id="first_name" name="first_name" class="input input--uppercase" placeholder="Enter first name" value="{{ first_name or '' }}" required /></div>
+    <div class="signup-field"><label class="label" for="middle_name">Middle Name <span>(MN)</span></label><input id="middle_name" name="middle_name" class="input input--uppercase" placeholder="Enter middle name" value="{{ middle_name or '' }}" /></div>
+    <div class="signup-field"><label class="label" for="student_number">Student ID Number</label><input id="student_number" name="student_number" class="input" placeholder="e.g. 2022-0001" value="{{ student_number or '' }}" required /></div>
+    <div class="signup-field signup-field--full"><label class="label" for="email_username">Institutional Email</label><div class="signup-email"><input id="email_username" class="input-group__input" type="text" placeholder="e.g. delacruz.juan" required /><span>@gordoncollege.edu.ph</span></div><input id="email" name="email" type="hidden" value="{{ email or '' }}" /></div>
+    <div class="signup-field signup-field--full"><label class="label" for="department">Department <span>(Optional)</span></label><select id="department" name="department" class="input"><option value="">Select department</option><option value="College of Computer Studies" {% if department == "College of Computer Studies" %}selected{% endif %}>College of Computer Studies</option></select></div>
+    <div class="signup-field signup-field--full"><label class="label" for="program">Program <span>(Optional)</span></label><select id="program" name="program" class="input"><option value="">Select program</option><option value="Bachelor of Science in Computer Science" {% if program == "Bachelor of Science in Computer Science" %}selected{% endif %}>Bachelor of Science in Computer Science</option><option value="Bachelor of Science in Information Technology" {% if program == "Bachelor of Science in Information Technology" %}selected{% endif %}>Bachelor of Science in Information Technology</option></select></div>
+    <div class="signup-field"><label class="label" for="password">Password</label><div class="password-field"><input id="password" name="password" type="password" class="input" autocomplete="new-password" placeholder="Enter password" required /><button type="button" class="password-toggle" data-password-toggle data-password-target="password" aria-label="Show password" aria-pressed="false">👁</button></div></div>
+    <div class="signup-field"><label class="label" for="confirm_password">Confirm password</label><div class="password-field"><input id="confirm_password" name="confirm_password" type="password" class="input" autocomplete="new-password" placeholder="Confirm password" required /><button type="button" class="password-toggle" data-password-toggle data-password-target="confirm_password" aria-label="Show password" aria-pressed="false">👁</button></div></div>
+    <button class="btn signup-submit signup-field--full" type="submit">♙ &nbsp; Create student account</button>
+  </form>
+  <div class="signup-form-footer">Already have an account? <a href="{{ url_for('auth.login') }}">Back to login</a></div>
+</section></div>
 <script>
     document.querySelector('.form').addEventListener('submit', function(e) {
         const emailUsername = document.getElementById('email_username').value;
@@ -56,9 +27,5 @@
         emailField.value = emailUsername + '@gordoncollege.edu.ph';
     });
 
-    // Auto-capitalize Full Name field to all uppercase
-    document.getElementById('full_name').addEventListener('input', function(e) {
-        this.value = this.value.toUpperCase();
-    });
 </script>
 {% endblock %}

@@ -33,6 +33,8 @@ def create_app() -> Flask:
     mail.init_app(app)
     csrf.init_app(app)
 
+    _ensure_compatible_schema(app)
+
     # Register blueprints
     try:
         from .blueprints.auth.routes import bp as auth_bp
@@ -62,3 +64,27 @@ def create_app() -> Flask:
             pass
 
     return app
+
+
+def _ensure_compatible_schema(app: Flask) -> None:
+    """Add nullable role fields when opening a database created by an older version."""
+    with app.app_context():
+        from sqlalchemy import inspect, text
+        from .extensions import db
+
+        db.create_all()
+        inspector = inspect(db.engine)
+        if "user" not in inspector.get_table_names():
+            return
+        columns = {column["name"] for column in inspector.get_columns("user")}
+        additions = {
+            "is_active": "BOOLEAN NOT NULL DEFAULT 1",
+            "employee_number": "VARCHAR(32)",
+            "last_name": "VARCHAR(60)",
+            "first_name": "VARCHAR(60)",
+            "middle_name": "VARCHAR(60)",
+        }
+        for name, column_type in additions.items():
+            if name not in columns:
+                db.session.execute(text(f"ALTER TABLE user ADD COLUMN {name} {column_type}"))
+        db.session.commit()

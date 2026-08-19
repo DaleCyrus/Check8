@@ -1,32 +1,44 @@
-{% extends "base.html" %} {% block title %}Login • CHECK8{% endblock %} {% block content %}
-<div class="card">
+{% extends "base.html" %}
+{% block title %}Login | CHECK8{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+{% block content %}
+<div class="auth-shell">
+  <section class="auth-pitch" aria-label="CHECK8 overview">
+    <div class="auth-brand"><span class="auth-brand__mark">C8</span><span><strong>CHECK8</strong><small>QR-enabled clearance management</small></span></div>
+    <div class="auth-pitch__copy">
+      <h1>Smart. Secure.<br>Seamless <em>Clearances.</em></h1>
+      <p>CHECK8 streamlines the clearance process with QR technology, making every step faster, paperless, and secure.</p>
+    </div>
+    <div class="auth-illustration" aria-hidden="true">
+      <div class="auth-platform"></div>
+      <div class="auth-qr"><span class="auth-qr__pattern">▦</span><b>C8</b></div>
+      <div class="auth-shield">✓</div>
+      <i class="auth-spark auth-spark--one">✦</i><i class="auth-spark auth-spark--two">✦</i>
+    </div>
+    <div class="auth-benefits"><span><b>♢</b><strong>Secure</strong><small>Your data is protected</small></span><span><b>◷</b><strong>Fast</strong><small>Clearances in real-time</small></span><span><b>▤</b><strong>Paperless</strong><small>No more paperwork</small></span></div>
+  </section>
 
-    <h1 class="h1">Login</h1>
-    <p class="muted">Enter your institutional email and password.</p>
-
-    <form method="post" class="form">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <div style="position: relative;">
-          <input id="email" name="email" type="text" class="input" placeholder="e.g. 20xxxxxxx" required autocapitalize="off" style="padding-right: 220px;" />
-          <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #666; font-size: 14px;">@gordoncollege.edu.ph</span>
-        </div>
-
-        <label class="label" for="password">Password</label>
-        <input id="password" name="password" type="password" class="input" autocomplete="current-password" required />
-
-        <button class="btn" type="submit">Login</button>
-        <a class="btn btn--ghost" href="{{ url_for('auth.signup') }}" style="margin-top: 8px; text-align: center; display: block;">
-        Sign up
-      </a>
+  <section class="auth-card">
+    <div class="auth-lock">♙</div>
+    <h2>Welcome back</h2>
+    <p class="auth-card__intro">Login to your account to continue</p>
+    <form method="post" class="form auth-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <label class="label" for="email">Institutional Email</label>
+      <div class="auth-input-wrap"><span class="auth-input-icon">✉</span><input id="email" name="email" type="text" class="input" placeholder="e.g. 20xxxxxxx" required autocapitalize="off" /><span class="auth-domain">@gordoncollege.edu.ph</span></div>
+      <label class="label" for="password">Password</label>
+      <div class="password-field auth-input-wrap"><span class="auth-input-icon">♙</span><input id="password" name="password" type="password" class="input" autocomplete="current-password" placeholder="Enter your password" required /><button type="button" class="password-toggle" data-password-toggle data-password-target="password" aria-label="Show password" aria-pressed="false">👁</button></div>
+      <div class="auth-options"><label><input type="checkbox" name="remember" /> Remember me</label><a href="#">Forgot password?</a></div>
+      <button class="btn auth-submit" type="submit">Login <span>→</span></button>
+      <div class="auth-or"><span>or</span></div>
+      <a class="btn btn--ghost auth-signup" href="{{ url_for('auth.signup') }}">Create an account <span>♙</span></a>
     </form>
     <script>
-      document.querySelector('form').addEventListener('submit', function(e) {
-        let emailField = document.getElementById('email');
-        if (emailField.value && !emailField.value.includes('@')) {
-          emailField.value = emailField.value + '@gordoncollege.edu.ph';
-        }
+      document.querySelector('.auth-form').addEventListener('submit', function() {
+        const emailField = document.getElementById('email');
+        if (emailField.value && !emailField.value.includes('@')) emailField.value += '@gordoncollege.edu.ph';
       });
     </script>
-
+  </section>
 </div>
 {% endblock %}

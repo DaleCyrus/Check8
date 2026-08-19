@@ -10,6 +10,8 @@ from .extensions import db, login_manager
 class Role(enum.Enum):
     STUDENT = "student"
     FACULTY = "faculty"
+    INSTRUCTOR = "instructor"
+    ADMIN = "admin"
 
 
 class ClearanceState(enum.Enum):
@@ -104,9 +106,13 @@ class StudentCourse(db.Model):
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     role = db.Column(db.String(20), nullable=False, index=True)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
 
     # Student login field
     student_number = db.Column(db.String(32), unique=True, nullable=True, index=True)
+
+    # Instructor login field
+    employee_number = db.Column(db.String(32), unique=True, nullable=True, index=True)
 
     # Faculty login field
     username = db.Column(db.String(64), unique=True, nullable=True, index=True)
@@ -124,6 +130,9 @@ class User(UserMixin, db.Model):
     student_courses = db.relationship("StudentCourse", back_populates="user")
 
     full_name = db.Column(db.String(120), nullable=False)
+    last_name = db.Column(db.String(60), nullable=True)
+    first_name = db.Column(db.String(60), nullable=True)
+    middle_name = db.Column(db.String(60), nullable=True)
     password_hash = db.Column(db.String(255), nullable=False)
 
     # Student-specific fields
@@ -181,7 +190,15 @@ class User(UserMixin, db.Model):
 
     @property
     def is_faculty(self) -> bool:
-        return self.role == Role.FACULTY.value
+        return self.role in {Role.FACULTY.value, Role.INSTRUCTOR.value}
+
+    @property
+    def is_instructor(self) -> bool:
+        return self.role in {Role.FACULTY.value, Role.INSTRUCTOR.value}
+
+    @property
+    def is_admin(self) -> bool:
+        return self.role == Role.ADMIN.value
 
     def get_roles_for_faculty(self, faculty_id: int):
         """Get all roles this user has in a specific faculty"""
