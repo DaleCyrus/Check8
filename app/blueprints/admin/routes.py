@@ -17,6 +17,7 @@ from ...models import (
 from ...utils.qr import verify_student_token
 
 bp = Blueprint("admin", __name__, url_prefix="/faculty")
+COURSE_DEPARTMENT = "College of Computer Studies"
 
 
 def _commit_with_retry(max_retries=5, base_delay=0.01):
@@ -40,7 +41,7 @@ def _commit_with_retry(max_retries=5, base_delay=0.01):
 def _require_faculty():
     if not current_user.is_authenticated or not getattr(current_user, "is_faculty", False):
         abort(403)
-    if not current_user.assigned_faculties:
+    if not current_user.assigned_faculties and not current_user.course_assignments:
         abort(403)
 
 
@@ -246,7 +247,7 @@ def _require_faculty_json(f):
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated or not getattr(current_user, "is_faculty", False):
             return jsonify({"ok": False, "error": "Unauthorized"}), 403
-        if not current_user.assigned_faculties:
+        if not current_user.assigned_faculties and not current_user.course_assignments:
             return jsonify({"ok": False, "error": "No assigned faculties"}), 403
         return f(*args, **kwargs)
     return decorated_function
@@ -255,7 +256,8 @@ def _require_faculty_json(f):
 @bp.get("/dashboard")
 @login_required
 def dashboard():
-    _require_faculty()
+    if not getattr(current_user, "is_faculty", False):
+        abort(403)
 
     # Get all faculties assigned to this user
     assigned_faculties = current_user.assigned_faculties
@@ -307,7 +309,6 @@ def dashboard():
     groups = db.session.execute(
         db.select(StudentGroup)
         .where(
-            StudentGroup.created_by_user_id == current_user.id,
             StudentGroup.course_id.in_(assigned_course_ids)
         )
         .order_by(StudentGroup.created_at.desc())
@@ -399,8 +400,14 @@ def set_status():
             return redirect(url_for("admin.view_group", group_id=group_id))
         return redirect(url_for("admin.dashboard"))
     
+    instructor_assignment = db.session.execute(
+        db.select(InstructorCourse).where(
+            InstructorCourse.user_id == current_user.id,
+            InstructorCourse.course_id == course_id,
+        )
+    ).scalar_one_or_none()
     assigned_faculty_ids = [f.id for f in current_user.assigned_faculties]
-    if course.faculty_id not in assigned_faculty_ids:
+    if course.faculty_id not in assigned_faculty_ids and not instructor_assignment:
         flash("You don't have permission to manage this course.", "error")
         if group_id:
             return redirect(url_for("admin.view_group", group_id=group_id))
@@ -855,7 +862,8 @@ def remove_student():
 @login_required
 def list_groups():
     """Display all student groups created by the current faculty member."""
-    _require_admin()
+    if not current_user.is_authenticated or not (current_user.is_admin or current_user.is_faculty):
+        abort(403)
     
     if current_user.is_admin:
         assigned_courses = db.session.execute(db.select(Course).order_by(Course.code.asc())).scalars().all()
@@ -868,13 +876,23 @@ def list_groups():
         groups = db.session.execute(
             db.select(StudentGroup)
             .where(
-                StudentGroup.created_by_user_id == current_user.id,
                 StudentGroup.course_id.in_(assigned_course_ids)
             )
             .order_by(StudentGroup.created_at.desc())
         ).scalars().all()
     
-    return render_template("admin/groups.html", groups=groups, assigned_courses=assigned_courses)
+    instructor_users = db.session.execute(
+        db.select(User)
+        .where(User.role.in_([Role.INSTRUCTOR.value, Role.FACULTY.value]))
+        .order_by(User.full_name.asc())
+    ).scalars().all()
+    return render_template(
+        "admin/groups.html",
+        groups=groups,
+        assigned_courses=assigned_courses,
+        instructors=instructor_users,
+        course_department=COURSE_DEPARTMENT,
+    )
 
 
 @bp.post("/group/create")
@@ -885,8 +903,13 @@ def create_group():
     
     name = (request.form.get("name") or "").strip()
     description = (request.form.get("description") or "").strip() or None
-    course_id_str = request.form.get("course_id")
-    course_id = int(course_id_str) if course_id_str else None
+    course_code = (request.form.get("course_code") or "").strip().upper()
+    course_name = (request.form.get("course_name") or "").strip()
+    instructor_id_str = request.form.get("instructor_id")
+    try:
+        instructor_id = int(instructor_id_str) if instructor_id_str else None
+    except ValueError:
+        instructor_id = None
     
     if not name:
         flash("Group name is required.", "error")
@@ -896,32 +919,44 @@ def create_group():
         flash("Group name must be 255 characters or less.", "error")
         return redirect(url_for("admin.list_groups"))
     
-    if not course_id:
-        flash("Course is required.", "error")
+    if not course_code or not course_name or not instructor_id:
+        flash("Course code, course name, and instructor are required.", "error")
         return redirect(url_for("admin.list_groups"))
-    
-    # Verify course exists and user has permission to teach it
-    course = db.session.get(Course, course_id)
+
+    instructor = db.session.get(User, instructor_id)
+    if not instructor or instructor.role not in {Role.INSTRUCTOR.value, Role.FACULTY.value}:
+        flash("Select a valid instructor.", "error")
+        return redirect(url_for("admin.list_groups"))
+
+    department = db.session.execute(
+        db.select(Faculty).where(Faculty.name == COURSE_DEPARTMENT)
+    ).scalar_one_or_none()
+    if not department:
+        department = Faculty(name=COURSE_DEPARTMENT)
+        db.session.add(department)
+        db.session.flush()
+
+    course = db.session.execute(db.select(Course).where(Course.code == course_code)).scalar_one_or_none()
+    if course and course.faculty_id != department.id:
+        flash(f"Course code '{course_code}' already belongs to another department.", "error")
+        return redirect(url_for("admin.list_groups"))
     if not course:
-        flash("Course not found.", "error")
-        return redirect(url_for("admin.list_groups"))
-    
+        course = Course(code=course_code, name=course_name, faculty_id=department.id)
+        db.session.add(course)
+        db.session.flush()
+
     instructor_assignment = db.session.execute(
         db.select(InstructorCourse).where(
-            InstructorCourse.user_id == current_user.id,
-            InstructorCourse.course_id == course_id
+            InstructorCourse.user_id == instructor.id,
+            InstructorCourse.course_id == course.id
         )
     ).scalar_one_or_none()
-
-    if not current_user.is_admin and not instructor_assignment:
-        flash("You don't have permission to create a group for this course.", "error")
-        return redirect(url_for("admin.list_groups"))
     
     # Check for duplicate name within this user's groups for this course
     existing = db.session.execute(
         db.select(StudentGroup).where(
             StudentGroup.created_by_user_id == current_user.id,
-            StudentGroup.course_id == course_id,
+            StudentGroup.course_id == course.id,
             StudentGroup.name == name,
         )
     ).scalar_one_or_none()
@@ -932,18 +967,59 @@ def create_group():
     
     group = StudentGroup(
         faculty_id=course.faculty_id,
-        course_id=course_id,
+        course_id=course.id,
         created_by_user_id=current_user.id,
         name=name,
         description=description,
     )
     db.session.add(group)
+    if not instructor_assignment:
+        db.session.add(InstructorCourse(user_id=instructor.id, course_id=course.id))
     try:
         _commit_with_retry()
-        flash(f"Group '{name}' created successfully for {course.code}.", "success")
+        flash(f"Group '{name}' created successfully for {course.code}; instructor assigned.", "success")
     except Exception as e:
         flash(f"Error creating group: {str(e)}", "error")
     
+    return redirect(url_for("admin.list_groups"))
+
+
+@bp.post("/admin/import-courses")
+@login_required
+def import_courses():
+    _require_admin()
+    upload = request.files.get("file")
+    if not upload or not upload.filename.lower().endswith(".csv"):
+        flash("Select a CSV course file.", "error")
+        return redirect(url_for("admin.list_groups"))
+
+    added = 0
+    skipped = 0
+    try:
+        rows = csv.DictReader(io.StringIO(upload.read().decode("utf-8-sig")))
+        department = db.session.execute(
+            db.select(Faculty).where(Faculty.name == COURSE_DEPARTMENT)
+        ).scalar_one_or_none()
+        if not department:
+            department = Faculty(name=COURSE_DEPARTMENT)
+            db.session.add(department)
+            db.session.flush()
+        for row in rows:
+            code = (row.get("course_code") or row.get("code") or "").strip().upper()
+            name = (row.get("course_name") or row.get("name") or "").strip()
+            if not code or not name:
+                skipped += 1
+                continue
+            if db.session.execute(db.select(Course).where(Course.code == code)).scalar_one_or_none():
+                skipped += 1
+                continue
+            db.session.add(Course(code=code, name=name, faculty_id=department.id))
+            added += 1
+        db.session.commit()
+        flash(f"Imported {added} course(s); skipped {skipped} row(s).", "success")
+    except Exception as error:
+        db.session.rollback()
+        flash(f"Could not import courses: {error}", "error")
     return redirect(url_for("admin.list_groups"))
 
 
@@ -978,16 +1054,12 @@ def delete_group(group_id):
 @login_required
 def view_group(group_id):
     """View a specific student group and its members."""
-    _require_admin()
+    if not current_user.is_authenticated or not (current_user.is_admin or current_user.is_faculty):
+        abort(403)
     
     group = db.session.get(StudentGroup, group_id)
     if not group:
         flash("Group not found.", "error")
-        return redirect(url_for("admin.list_groups"))
-    
-    # Verify user is the creator
-    if group.created_by_user_id != current_user.id:
-        flash("You don't have permission to view this group.", "error")
         return redirect(url_for("admin.list_groups"))
     
     # Get assigned courses for this user
@@ -995,6 +1067,9 @@ def view_group(group_id):
         db.select(Course).join(InstructorCourse).where(InstructorCourse.user_id == current_user.id)
     ).scalars().all()
     assigned_course_ids = [c.id for c in assigned_courses]
+    if not current_user.is_admin and group.course_id not in assigned_course_ids:
+        flash("You don't have permission to view this class.", "error")
+        return redirect(url_for("admin.dashboard"))
     
     # Get group members with their details
     members = db.session.execute(

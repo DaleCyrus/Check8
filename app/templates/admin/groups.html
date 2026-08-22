@@ -30,11 +30,24 @@
         <div class="admin-panel__heading"><div><h2>Create New Class</h2><p>Add a class to organize students and clearance work.</p></div></div>
         <form method="post" action="{{ url_for('admin.create_group') }}" class="groups-create-form">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <div class="admin-form-field"><label>COURSE</label><select name="course_id" class="input" required><option value="">Choose a course</option>{% for course in assigned_courses %}<option value="{{ course.id }}">{{ course.code }} - {{ course.name }}</option>{% endfor %}</select></div>
+          <div class="admin-form-field"><label>COURSE CODE</label><input type="text" name="course_code" class="input" placeholder="e.g. CSPS 102" required maxlength="20" /></div>
+          <div class="admin-form-field"><label>COURSE NAME</label><input type="text" name="course_name" class="input" placeholder="e.g. Computer Programming 1" required maxlength="255" /></div>
+          <div class="admin-form-field"><label>DEPARTMENT</label><input type="text" class="input" value="{{ course_department }}" readonly /></div>
+          <div class="admin-form-field"><label>INSTRUCTOR</label><select name="instructor_id" class="input" required><option value="">Choose an instructor</option>{% for instructor in instructors %}<option value="{{ instructor.id }}">{{ instructor.full_name }}{% if instructor.employee_number %} ({{ instructor.employee_number }}){% endif %}</option>{% endfor %}</select></div>
           <div class="admin-form-field"><label>CLASS NAME</label><input type="text" name="name" class="input" placeholder="Block A, Group 1, etc." required maxlength="255" /></div>
           <div class="admin-form-field groups-description"><label>DESCRIPTION (OPTIONAL)</label><input type="text" name="description" class="input" placeholder="Brief description of this class" maxlength="500" /></div>
           <button type="submit" class="btn admin-create-submit">＋ &nbsp; Create Class</button>
         </form>
+      </section>
+
+      <section class="admin-panel admin-import-panel">
+        <div class="admin-panel__heading"><div><h2>Import Courses</h2><p>Upload a CSV to add several courses at once. Existing course codes are skipped.</p></div></div>
+        <form method="post" action="{{ url_for('admin.import_courses') }}" enctype="multipart/form-data" class="admin-import-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <input type="file" name="file" accept=".csv" required />
+          <button class="btn admin-create-submit" type="submit">⇧ &nbsp; Import Courses</button>
+        </form>
+        <p class="muted small">CSV headers: <code>course_code,course_name</code>. Every imported course is assigned to {{ course_department }}.</p>
       </section>
 
       <section class="admin-panel instructor-panel groups-list-panel">

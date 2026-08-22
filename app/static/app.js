@@ -467,5 +467,30 @@ function setupNotificationDismissal() {
   });
 }
 
+function setupSiteInteraction() {
+  const canUseTrail = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!canUseTrail) return;
+
+  let lastTrailTime = 0;
+  const cursorGlow = document.createElement('span');
+  cursorGlow.className = 'cursor-glow';
+  document.body.appendChild(cursorGlow);
+  document.addEventListener('mousemove', (event) => {
+    cursorGlow.style.left = `${event.clientX}px`;
+    cursorGlow.style.top = `${event.clientY}px`;
+    const now = performance.now();
+    if (now - lastTrailTime < 45) return;
+    lastTrailTime = now;
+
+    const trail = document.createElement('span');
+    trail.className = 'cursor-trail';
+    trail.style.left = `${event.clientX}px`;
+    trail.style.top = `${event.clientY}px`;
+    document.body.appendChild(trail);
+    trail.addEventListener('animationend', () => trail.remove(), { once: true });
+  });
+}
+
 document.addEventListener('DOMContentLoaded', setupNotificationDismissal);
+document.addEventListener('DOMContentLoaded', setupSiteInteraction);
 

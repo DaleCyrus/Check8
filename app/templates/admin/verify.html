@@ -1,8 +1,15 @@
 {% extends "base.html" %} {% block title %}Clearance Validation • CHECK8{% endblock %} {% block content %}
-<div class="grid">
-    <section class="card">
-        <h1 class="h1">Clearance Validation</h1>
+<div class="grid verify-page">
+    <section class="card verify-card">
+        <svg class="verify-icon-definitions" aria-hidden="true">
+            <symbol id="verify-qr" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v2h-2zM14 18h2v2h-2zM18 18h2v2h-2z" fill="currentColor"/><path d="M6 6h2v2H6zM16 6h2v2h-2zM6 16h2v2H6z" fill="#fff"/></symbol>
+            <symbol id="verify-camera" viewBox="0 0 24 24"><path d="M4 7h4l1.5-2h5L16 7h4v12H4V7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+            <symbol id="verify-shield" viewBox="0 0 24 24"><path d="M12 3 19 6v5c0 4.5-2.7 7.8-7 10-4.3-2.2-7-5.5-7-10V6l7-3z" fill="none" stroke="currentColor" stroke-width="2"/><path d="m9 12 2 2 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+            <symbol id="verify-clipboard" viewBox="0 0 24 24"><path d="M8 5h8v3H8zM6 6H4v15h16V6h-2M8 12h8M8 16h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        </svg>
+        <div class="verify-heading"><span class="verify-heading__icon"><svg class="verify-ui-icon"><use href="#verify-qr"></use></svg></span><div><h1 class="h1">Clearance Validation</h1>
         <p class="muted">Select a course, then scan a QR code (camera) or paste the token string.</p>
+        </div></div>
 
         <!-- Course Selection -->
         <div style="margin-bottom: 2rem; padding: 1.5rem; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.5rem;">
@@ -20,7 +27,7 @@
 
         <div class="split">
             <div>
-                <h2 class="h2">Camera scan</h2>
+                <h2 class="h2"><svg class="verify-ui-icon"><use href="#verify-camera"></use></svg> Camera scan</h2>
 
                 <div id="cameraControls" class="cameraControls" style="display: none; margin-bottom: 1rem; gap: 0.5rem;">
                     <button id="toggleCamera" class="btn btn--sm" type="button">Stop Camera</button>
@@ -46,19 +53,19 @@
             </div>
 
             <div>
-                <h2 class="h2">Paste token</h2>
+                <h2 class="h2"><svg class="verify-ui-icon"><use href="#verify-clipboard"></use></svg> Paste token</h2>
                 <form id="pasteTokenForm" class="form" onsubmit="handlePasteTokenSubmit(event)">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                     <textarea id="tokenInput" class="input input--mono" name="token" rows="5" placeholder="Paste token here...">{{ token or "" }}</textarea>
                     <input type="hidden" id="courseIdInput" name="course_id" value="">
-                    <button class="btn" type="submit">Verify</button>
+                    <button class="btn" type="submit"><svg class="verify-ui-icon"><use href="#verify-shield"></use></svg> Verify</button>
                 </form>
             </div>
         </div>
 
         <div class="divider"></div>
 
-        <h2 class="h2">Result</h2>
+        <h2 class="h2"><svg class="verify-ui-icon"><use href="#verify-clipboard"></use></svg> Result</h2>
         <div id="verifyResult" class="resultBox" data-has-server-result="{{ '1' if student else '0' }}">
             {% if student %}
             <div class="resultLine"><strong>Valid</strong></div>

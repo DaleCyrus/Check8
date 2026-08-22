@@ -19,7 +19,7 @@
   <div class="signup-form-footer">Already have an account? <a href="{{ url_for('auth.login') }}">Back to login</a></div>
 </section></div>
 <script>
-  document.querySelector('.form').addEventListener('submit', function(e) {
+  document.querySelector('.signup-form-grid').addEventListener('submit', function(e) {
     const emailUsername = document.getElementById('email_username').value;
     const emailField = document.getElementById('email');
     emailField.value = emailUsername + '@gordoncollege.edu.ph';

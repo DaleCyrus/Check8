@@ -11,8 +11,8 @@
 
         if (nextView.classList.contains('dashboard-view--active')) return;
 
-        currentView.classList.remove('dashboard-view--active');
-        currentView.classList.add('dashboard-view--leaving');
+        currentView.classList.remove('dashboard-view--active', 'dashboard-view--leaving');
+        currentView.style.display = 'none';
 
         if (tab === 'groups') {
             tabGroups.classList.add('is-active');
@@ -22,10 +22,8 @@
             tabGroups.classList.remove('is-active');
         }
 
-        window.setTimeout(() => {
-            currentView.classList.remove('dashboard-view--leaving');
-            nextView.classList.add('dashboard-view--active');
-        }, 180);
+        nextView.classList.add('dashboard-view--active');
+        nextView.style.display = 'block';
 
         window.scrollTo({
             top: 0,
@@ -231,7 +229,18 @@
         }
     });
 </script>
-<section class="card">
+<section class="card instructor-dashboard">
+    <svg class="icon-definitions" aria-hidden="true">
+        <symbol id="icon-qr" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v2h-2zM14 18h2v2h-2zM18 18h2v2h-2z" fill="currentColor"/><path d="M6 6h2v2H6zM16 6h2v2h-2zM6 16h2v2H6z" fill="#fff"/></symbol>
+        <symbol id="icon-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3" fill="currentColor"/><circle cx="17" cy="9" r="2.5" fill="currentColor"/><path d="M3 19c0-3.2 2.7-5 6-5s6 1.8 6 5H3zM14 14.5c2.9.1 5 1.6 5 4.5h-3c0-1.8-.7-3.3-2-4.5z" fill="currentColor"/></symbol>
+        <symbol id="icon-hourglass" viewBox="0 0 24 24"><path d="M6 3h12v2l-4 5 4 5v4H6v-4l4-5-4-5V3zm3 2c.2 1.8 1.4 3.2 3 4.2 1.6-1 2.8-2.4 3-4.2H9zm0 12h6c-.2-1.8-1.4-3.2-3-4.2-1.6 1-2.8 2.4-3 4.2z" fill="currentColor"/></symbol>
+        <symbol id="icon-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8 12 2.5 2.5L16 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="icon-shield-x" viewBox="0 0 24 24"><path d="M12 3 19 6v5c0 4.5-2.7 7.8-7 10-4.3-2.2-7-5.5-7-10V6l7-3z" fill="none" stroke="currentColor" stroke-width="2"/><path d="m9.5 9.5 5 5m0-5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+        <symbol id="icon-folder" viewBox="0 0 24 24"><path d="M3 6h7l2 2h9v10H3V6z" fill="currentColor"/><path d="M5 10h14" stroke="#fff" stroke-width="1.5"/></symbol>
+        <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15 15 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+        <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+        <symbol id="icon-clipboard" viewBox="0 0 24 24"><path d="M8 5h8v3H8zM6 6H4v15h16V6h-2M8 12h8M8 16h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    </svg>
     <script id="assignedCoursesData" type="application/json">{{ assigned_courses_json | tojson }}</script>
     <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
         <div>
@@ -244,33 +253,33 @@
             </p>
         </div>
         <div class="dashboard-top-actions" style="display: flex; gap: 0.5rem;">
-            <a class="btn btn--ghost" href="{{ url_for('admin.verify') }}" style="font-size: 0.9rem;">QR Verification</a>
-            <a class="btn btn--ghost" href="{{ url_for('admin.list_groups') }}" style="font-size: 0.9rem;">Manage Classes</a>
+            <a class="btn btn--ghost" href="{{ url_for('admin.verify') }}" style="font-size: 0.9rem;"><svg class="ui-icon" aria-hidden="true"><use href="#icon-qr"></use></svg>QR Verification</a>
+            <button class="btn btn--ghost" type="button" onclick="switchTab('groups')" style="font-size: 0.9rem;"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg>View Classes</button>
         </div>
     </div>
 
     <!-- Statistics Dashboard -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+    <div class="instructor-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
         <div style="background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%); border: 1px solid #fb923c; border-radius: 0.75rem; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
-            <p class="muted" style="margin: 0; font-size: 0.9rem;">Total Students</p>
+            <div class="stat-heading"><span class="stat-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg></span><p class="muted" style="margin: 0; font-size: 0.9rem;">Total Students</p></div>
             <p style="margin: 0; font-size: 2.5rem; font-weight: 700; color: #ea580c;">{{ total_students }}</p>
             <p class="muted" style="margin: 0; font-size: 0.85rem;">Enrolled in your courses</p>
         </div>
 
         <div style="background: linear-gradient(135deg, #fef08a 0%, #fde047 100%); border: 1px solid #facc15; border-radius: 0.75rem; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
-            <p class="muted" style="margin: 0; font-size: 0.9rem;">Pending</p>
+            <div class="stat-heading"><span class="stat-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-hourglass"></use></svg></span><p class="muted" style="margin: 0; font-size: 0.9rem;">Pending</p></div>
             <p style="margin: 0; font-size: 2.5rem; font-weight: 700; color: #ca8a04;">{{ pending_count }}</p>
             <p class="muted" style="margin: 0; font-size: 0.85rem;">Awaiting clearance</p>
         </div>
 
         <div style="background: linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%); border: 1px solid #fb923c; border-radius: 0.75rem; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
-            <p class="muted" style="margin: 0; font-size: 0.9rem;">Approved</p>
+            <div class="stat-heading"><span class="stat-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-check"></use></svg></span><p class="muted" style="margin: 0; font-size: 0.9rem;">Approved</p></div>
             <p style="margin: 0; font-size: 2.5rem; font-weight: 700; color: #c2410c;">{{ approved_count }}</p>
             <p class="muted" style="margin: 0; font-size: 0.85rem;">Clearance granted</p>
         </div>
 
         <div style="background: linear-gradient(135deg, #fecdd3 0%, #fbcfe8 100%); border: 1px solid #f472b6; border-radius: 0.75rem; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
-            <p class="muted" style="margin: 0; font-size: 0.9rem;">Rejected</p>
+            <div class="stat-heading"><span class="stat-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-shield-x"></use></svg></span><p class="muted" style="margin: 0; font-size: 0.9rem;">Rejected</p></div>
             <p style="margin: 0; font-size: 2.5rem; font-weight: 700; color: #be185d;">{{ rejected_count }}</p>
             <p class="muted" style="margin: 0; font-size: 0.85rem;">Clearance denied</p>
         </div>
@@ -279,22 +288,22 @@
     <!-- Tabs for View Mode -->
     <div class="dashboard-tabs" style="display: flex; gap: 0.5rem; margin-bottom: 2rem; border-bottom: 2px solid #e5e7eb;">
         <button type="button" class="btn btn--tab" id="tab-groups" onclick="switchTab('groups')" style="border: none; background: none; padding: 0.75rem 1rem; font-weight: 600; color: #6b7280; border-bottom: 3px solid transparent; cursor: pointer;">
-         📂 Classes
+         <svg class="ui-icon" aria-hidden="true"><use href="#icon-folder"></use></svg> Classes
       </button>
         <button type="button" class="btn btn--tab" id="tab-all" onclick="switchTab('all')" style="border: none; background: none; padding: 0.75rem 1rem; font-weight: 600; color: #6b7280; border-bottom: 3px solid transparent; cursor: pointer;">
-        👥 All Students
+        <svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg> All Students
       </button>
     </div>
 
     <!-- GROUPS VIEW -->
-    <div id="groups-view" class="dashboard-view dashboard-view--active">
+    <div id="groups-view" class="dashboard-view dashboard-view--active" style="display: block;">
         {% if groups_data %}
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
             {% for group_item in groups_data %}
             <div class="card" style="border: 1px solid #e5e7eb; padding: 1.75rem; display: flex; flex-direction: column; gap: 1rem; background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%); box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: box-shadow 0.2s, transform 0.2s;" onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='0 1px 3px rgba(0,0,0,0.1)'; this.style.transform='translateY(0)'">
                 <div>
-                    <h3 style="margin: 0 0 0.5rem 0; font-size: 1.15rem; color: var(--text); font-weight: 600;">📂 {{ group_item.group.name }}</h3>
-                    <p class="muted small" style="margin: 0 0 0.75rem 0; font-size: 0.85rem;">📍 {{ group_item.group.faculty.name }}</p>
+                    <h3 style="margin: 0 0 0.5rem 0; font-size: 1.15rem; color: var(--text); font-weight: 600;"><svg class="ui-icon" aria-hidden="true"><use href="#icon-folder"></use></svg> {{ group_item.group.name }}</h3>
+                    <p class="muted small" style="margin: 0 0 0.75rem 0; font-size: 0.85rem;"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg> {{ group_item.group.faculty.name }}</p>
                     {% if group_item.group.description %}
                     <p class="muted small" style="margin: 0; font-size: 0.9rem; line-height: 1.5; color: #666;">{{ group_item.group.description }}</p>
                     {% endif %}
@@ -302,40 +311,48 @@
                 <div style="flex: 1;"></div>
                 <div style="display: flex; gap: 0.5rem; align-items: center;">
                     <span class="badge" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #b45309; padding: 0.4rem 0.8rem; border-radius: 9999px; font-size: 0.85rem; font-weight: 500;">
-                  👥 {{ group_item.members|length }} students
+                                    <svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg> {{ group_item.members|length }} student{% if group_item.members|length != 1 %}s{% endif %}
                 </span>
                 </div>
-                <a href="{{ url_for('admin.view_group', group_id=group_item.group.id) }}" class="btn" style="width: 100%; text-align: center; margin: 0; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; font-weight: 500; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-                👉 View & Manage
-              </a>
+                                {% if group_item.members %}
+                                <div style="border-top: 1px solid #e5e7eb; padding-top: 0.75rem;">
+                                        <p class="muted small" style="margin: 0 0 0.5rem; font-weight: 600;">Students</p>
+                                        {% for member_item in group_item.members %}
+                                        <p style="margin: 0.25rem 0; font-size: 0.85rem;">{{ member_item.student.full_name }} <span class="muted">({{ member_item.student.student_number }})</span></p>
+                                        {% endfor %}
+                                </div>
+                                {% endif %}
+                                <button type="button" class="btn" onclick="switchTab('all')" style="width: 100%; text-align: center; margin: 0; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; font-weight: 500; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                                View Students <svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg>
+                            </button>
             </div>
             {% endfor %}
         </div>
         {% else %}
         <div style="padding: 4rem 2rem; text-align: center; background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%); border: 2px dashed #fb923c; border-radius: 0.75rem;">
-            <div style="font-size: 4rem; margin-bottom: 1rem;">📂</div>
+            <div style="font-size: 4rem; margin-bottom: 1rem;"><svg class="ui-icon" aria-hidden="true"><use href="#icon-folder"></use></svg></div>
             <p style="font-size: 1.2rem; color: var(--text); margin: 0 0 0.75rem 0; font-weight: 600;">No Classes Yet</p>
             <p class="muted" style="margin: 0 0 1.75rem 0; font-size: 0.95rem;">Organize your students into classes for better clearance management.</p>
-            <a href="{{ url_for('admin.list_groups') }}" class="btn" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; padding: 0.75rem 1.5rem;">
-            ➕ Create New Class
-          </a>
+                        <button type="button" class="btn" onclick="switchTab('all')" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; padding: 0.75rem 1.5rem;">
+                        <svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg> View All Students
+                    </button>
         </div>
         {% endif %}
     </div>
 
     <!-- ALL STUDENTS VIEW -->
-    <div id="all-view" class="dashboard-view">
+    <div id="all-view" class="dashboard-view" style="display: none;">
         <!-- Add Students Section -->
         <div style="background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%); border: 1px solid #fb923c; border-radius: 0.5rem; padding: 2.5rem; margin-bottom: 3rem;">
             <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                <span style="font-size: 2rem;">🔍</span>
+                <span style="font-size: 2rem;"><svg class="ui-icon" aria-hidden="true"><use href="#icon-search"></use></svg></span>
                 <h3 class="h2" style="margin: 0;">Add Students to Course</h3>
             </div>
             <p class="muted" style="margin-bottom: 1.5rem;">Search for students to add them to your course clearance list.</p>
 
             <div class="search-row" style="display: flex; gap: 0.75rem; margin-bottom: 1rem;">
                 <input type="text" id="studentSearch" class="input" placeholder="Search by student number or name..." autocomplete="off" style="flex: 1;" />
-                <button class="btn" onclick="searchStudents()" style="white-space: nowrap; background: #f97316; color: white; border: none;">🔍 Search</button>
+                <button class="btn" onclick="searchStudents()" style="white-space: nowrap; background: #f97316; color: white; border: none;"><svg class="ui-icon" aria-hidden="true"><use href="#icon-search"></use></svg> Search</button>
             </div>
 
             <div id="searchError" style="display: none; padding: 1rem; background: #fecaca; border: 1px solid #f87171; border-radius: 0.375rem; color: #7f1d1d; margin-bottom: 1rem; font-size: 0.9rem;"></div>
@@ -361,7 +378,7 @@
                       <option value="{{ course.id }}">{{ course.code }}</option>
                     {% endfor %}
                   </select>
-                                <button class="btn btn--sm" onclick="bulkAddStudents()" style="white-space: nowrap; background: #f97316; color: white; border: none;">➕ Add</button>
+                                <button class="btn btn--sm" onclick="bulkAddStudents()" style="white-space: nowrap; background: #f97316; color: white; border: none;"><svg class="ui-icon" aria-hidden="true"><use href="#icon-plus"></use></svg> Add</button>
                             </div>
                         </div>
                     </div>
@@ -378,10 +395,10 @@
         <!-- Current Clearance List Section -->
         <div style="margin-bottom: 1rem;">
             <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                <span style="font-size: 1.8rem;">📋</span>
-                <h3 class="h2" style="margin: 0;">Clearance Status</h3>
+                <span style="font-size: 1.8rem;"><svg class="ui-icon" aria-hidden="true"><use href="#icon-clipboard"></use></svg></span>
+                <h3 class="h2" style="margin: 0;">All Students in Your Course</h3>
             </div>
-            <p class="muted" style="margin-bottom: 1.5rem;">Manage student clearance status for your course.</p>
+            <p class="muted" style="margin-bottom: 1.5rem;">All students enrolled in your course, including their clearance status.</p>
 
             {% if rows|length > 0 %}
             <div style="overflow-x: auto; background: white; border: 1px solid #e5e7eb; border-radius: 0.5rem;">
@@ -436,8 +453,8 @@
             </div>
             {% else %}
             <div style="padding: 3rem 2rem; text-align: center; background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%); border: 2px dashed #fb923c; border-radius: 0.5rem;">
-                <div style="font-size: 3rem; margin-bottom: 1rem;">👥</div>
-                <p style="font-size: 1rem; color: var(--text); margin: 0 0 0.5rem 0; font-weight: 600;">No students in clearance list yet</p>
+                <div style="font-size: 3rem; margin-bottom: 1rem;"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg></div>
+                <p style="font-size: 1rem; color: var(--text); margin: 0 0 0.5rem 0; font-weight: 600;">No students enrolled in your course yet</p>
                 <p class="muted" style="margin: 0;">Use the search above to add students to your course.</p>
             </div>
             {% endif %}
@@ -489,6 +506,8 @@
 
     .dashboard-view--active {
         display: block;
+        opacity: 1;
+        transform: translateY(0);
         animation: dashboardTabIn 0.38s cubic-bezier(.22, 1, .36, 1) both;
         pointer-events: auto;
     }
@@ -815,5 +834,41 @@
         font-size: 0.8rem;
     }
 }
+    .instructor-dashboard{position:relative;max-width:1120px;margin:18px auto;padding:24px 22px 20px;border:1px solid #f2dfca;border-radius:16px;background:rgba(255,255,255,.82);box-shadow:0 10px 30px rgba(146,91,34,.06)}
+    .instructor-dashboard .icon-definitions{display:none}
+    .instructor-dashboard .ui-icon{width:16px;height:16px;display:inline-block;vertical-align:middle;fill:currentColor;flex:none}
+    .instructor-dashboard .dashboard-header{margin-bottom:24px!important}
+    .instructor-dashboard .dashboard-header h1{font-size:22px;color:#28231f;margin-bottom:12px}
+    .instructor-dashboard .dashboard-header p{font-size:13px;line-height:1.55}
+    .instructor-dashboard .dashboard-header strong{color:#ec7414}
+    .instructor-dashboard .dashboard-top-actions .btn{height:40px;min-height:40px;padding:8px 14px;border:1px solid #f4b078;border-radius:9px;background:#fff;color:#e96f12;box-shadow:none;display:inline-flex;align-items:center;gap:8px}
+    .instructor-dashboard .dashboard-top-actions .btn:hover{background:#fff8f1;border-color:#ed7818;transform:translateY(-1px)}
+    .instructor-stats{gap:18px!important;margin-bottom:28px!important}
+    .instructor-stats>div{min-height:155px;padding:16px!important;border-radius:12px!important;display:flex!important;justify-content:space-between;gap:10px!important;position:relative;overflow:hidden}
+    .instructor-stats>div:after{content:"";position:absolute;right:-12px;bottom:-22px;width:100px;height:100px;border-radius:50%;border:2px dotted rgba(255,255,255,.65);opacity:.7}
+    .instructor-stats>div:nth-child(1){background:linear-gradient(135deg,#fff2e3,#fffaf4)!important;border-color:#ffc18d!important}
+    .instructor-stats>div:nth-child(2){background:linear-gradient(135deg,#fff8d9,#fffdf1)!important;border-color:#f5d36d!important}
+    .instructor-stats>div:nth-child(3){background:linear-gradient(135deg,#eef8e9,#fbfff8)!important;border-color:#b9dcae!important}
+    .instructor-stats>div:nth-child(4){background:linear-gradient(135deg,#fff0ee,#fffafa)!important;border-color:#f5b5ad!important}
+    .instructor-stats .stat-heading{display:flex;align-items:center;gap:10px;color:#38312b}
+    .instructor-stats .stat-heading p{font-size:12px!important;position:relative;z-index:1}
+    .instructor-stats .stat-icon{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;background:rgba(255,255,255,.55);color:#eb7915}
+    .instructor-stats>div:nth-child(2) .stat-icon{color:#d89710}.instructor-stats>div:nth-child(3) .stat-icon{color:#55a34a}.instructor-stats>div:nth-child(4) .stat-icon{color:#dc4d4d}
+    .instructor-stats>div>p:nth-of-type(1){margin-top:auto!important;font-size:34px!important;line-height:1!important;position:relative;z-index:1}
+    .instructor-stats>div>p:last-child{font-size:11px!important;position:relative;z-index:1}
+    .instructor-dashboard .dashboard-tabs{gap:0!important;margin-bottom:0!important;border-bottom:1px solid #eee5dc!important}
+    .instructor-dashboard .btn--tab{height:48px;min-height:48px;padding:10px 18px!important;border:0!important;border-bottom:2px solid transparent!important;border-radius:10px 10px 0 0;background:transparent!important;color:#7a7773!important;display:inline-flex;align-items:center;gap:8px}
+    .instructor-dashboard .btn--tab:hover,.instructor-dashboard .btn--tab.is-active{color:#ed7415!important;background:#fff8f0!important;border-bottom-color:#ed7415!important}
+    .instructor-dashboard .dashboard-view{padding-top:14px}
+    .instructor-dashboard #groups-view>div{gap:10px!important;grid-template-columns:1fr!important}
+    .instructor-dashboard #groups-view>div>.card{min-height:105px;padding:15px 18px!important;display:grid!important;grid-template-columns:1fr auto;align-items:center;gap:8px 18px!important;border:1px solid #eee5dc!important;border-radius:10px!important;background:#fff!important;box-shadow:none!important}
+    .instructor-dashboard #groups-view>div>.card:hover{border-color:#f3b27b!important;box-shadow:0 6px 16px rgba(227,119,22,.1)!important}
+    .instructor-dashboard #groups-view h3{font-size:14px!important;margin:0 0 6px!important;color:#292521!important}
+    .instructor-dashboard #groups-view h3:first-letter{color:#eb7615}
+    .instructor-dashboard #groups-view .btn{grid-column:2;grid-row:1 / span 3;width:auto!important;min-width:120px;padding:10px 14px!important;background:#fff!important;color:#ed7415!important;border:1px solid #f2b17e!important;box-shadow:none!important}
+    .instructor-dashboard #groups-view .btn:hover{background:#fff7ef!important}
+    .instructor-dashboard #groups-view .badge{background:#fff5dc!important;color:#b8790b!important;border-radius:5px!important}
+    @media (max-width:700px){.instructor-dashboard{margin:10px;padding:16px 13px}.instructor-dashboard .dashboard-header{flex-direction:column}.instructor-dashboard .dashboard-top-actions{width:100%;display:grid!important;grid-template-columns:1fr 1fr;gap:8px!important}.instructor-dashboard .dashboard-top-actions .btn{width:100%!important}.instructor-stats{grid-template-columns:1fr 1fr!important;gap:10px!important}.instructor-stats>div{min-height:128px}.instructor-dashboard #groups-view>div>.card{grid-template-columns:1fr}.instructor-dashboard #groups-view>div>.card .btn{grid-column:1;grid-row:auto;width:100%!important}}
+    @media (max-width:430px){.instructor-dashboard .dashboard-top-actions{grid-template-columns:1fr}.instructor-stats{grid-template-columns:1fr!important}.instructor-dashboard .dashboard-tabs .btn--tab{padding:10px 12px!important;font-size:12px}}
 </style>
 {% endblock %}
