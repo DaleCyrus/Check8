@@ -1,7 +1,23 @@
 {% extends "base.html" %} {% block title %}Student Dashboard • CHECK8{% endblock %} {% block content %}
-<div class="grid">
-    <section class="card">
-        <h1 class="h1">Student Dashboard</h1>
+<div class="student-dashboard">
+    <header class="student-dashboard__hero">
+        <div>
+            <p class="student-dashboard__eyebrow">CLEARANCE HUB</p>
+            <h1>Student Dashboard</h1>
+            <p class="student-dashboard__welcome">Welcome back, {{ current_user.first_name or current_user.full_name }}. Keep your clearance progress moving.</p>
+        </div>
+        <div class="student-dashboard__status"><span></span>Account active</div>
+    </header>
+
+    <div class="student-dashboard__grid">
+    <section class="card student-profile-card">
+        <div class="student-card-heading">
+            <div>
+                <p class="student-card-heading__eyebrow">STUDENT PROFILE</p>
+                <h2 class="h2">Your information</h2>
+            </div>
+            <div class="student-avatar" aria-hidden="true">{{ (current_user.first_name or current_user.full_name)[0] }}</div>
+        </div>
         <div class="kv">
             <div class="kv__item">
                 <div class="kv__k">Name</div>
@@ -21,9 +37,15 @@
             </div>
         </div>
 
-        <h2 class="h2">Clearance status</h2>
+        <div class="student-section-heading">
+            <div>
+                <p class="student-card-heading__eyebrow">ACADEMIC PROGRESS</p>
+                <h2 class="h2">Clearance status</h2>
+            </div>
+            {% if clearances %}<span class="student-record-count">{{ clearances|length }} record{% if clearances|length != 1 %}s{% endif %}</span>{% endif %}
+        </div>
         {% if clearances %}
-        <table class="table">
+        <table class="table student-table">
             <thead>
                 <tr>
                     <th>Course</th>
@@ -35,9 +57,9 @@
             <tbody>
                 {% for cs, course, faculty, instructor_names in clearances %}
                 <tr>
-                    <td><strong>{{ course.code }} - {{ course.name }}</strong></td>
-                    <td>{{ instructor_names }}</td>
-                    <td>
+                    <td data-label="Course"><strong>{{ course.code }} - {{ course.name }}</strong></td>
+                    <td data-label="Instructor">{{ instructor_names }}</td>
+                    <td data-label="Status">
                         {% if cs.state == 'pending' %}
                             <span class="badge badge--pending">Pending</span>
                         {% elif cs.state == 'cleared' %}
@@ -48,14 +70,14 @@
                             <span class="badge">{{ cs.state }}</span>
                         {% endif %}
                     </td>
-                    <td class="muted">{{ cs.note or "—" }}</td>
+                    <td data-label="Note" class="muted">{{ cs.note or "—" }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
         <div style="margin-top: 1rem;">
-            <a href="{{ url_for('student.download_clearance_pdf') }}" class="btn btn-primary" download>
-                Download as PDF
+            <a href="{{ url_for('student.download_clearance_pdf') }}" class="btn btn-primary student-download" download>
+                <span aria-hidden="true">↓</span> Download clearance PDF
             </a>
         </div>
         {% else %}
@@ -63,12 +85,20 @@
         {% endif %}
     </section>
 
-    <aside class="card">
-        <h2 class="h2">Your QR</h2>
-        <p class="muted">Show this QR to faculties for verification. When scanned, it will verify your identity securely.</p>
-        <div class="qrBox">
+    <aside class="card student-qr-card">
+        <div class="student-qr-card__heading">
+            <div>
+                <p class="student-card-heading__eyebrow">IDENTITY PASS</p>
+                <h2 class="h2">Your QR code</h2>
+            </div>
+            <span class="student-qr-card__mark" aria-hidden="true">⌁</span>
+        </div>
+        <p class="muted student-qr-card__intro">Show this QR to faculty for secure, paperless identity verification.</p>
+        <div class="qrBox student-qrbox">
             <img class="qrImg" src="{{ url_for('student.qr_png') }}" alt="Student QR code" />
         </div>
+        <div class="student-qr-card__footer"><span></span>Ready to scan <b>CHECK8 verified</b></div>
     </aside>
+    </div>
 </div>
 {% endblock %}

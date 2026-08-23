@@ -632,6 +632,33 @@
             font-size: 0.875rem;
         }
     }
+        .instructor-dashboard{max-width:1120px;margin:24px auto 60px!important;padding:32px!important;border:1px solid rgba(236,160,83,.28);border-radius:24px;background:linear-gradient(145deg,rgba(255,255,255,.96),rgba(255,248,239,.9));box-shadow:0 18px 48px rgba(142,82,23,.09)}
+        .instructor-dashboard .dashboard-header{position:relative;display:flex;gap:24px;align-items:flex-end!important;margin-bottom:28px!important;padding-bottom:24px;border-bottom:1px solid rgba(236,160,83,.24)}
+        .instructor-dashboard .dashboard-header:before{content:"FACULTY WORKSPACE";display:block;position:absolute;top:-4px;left:0;color:#e87516;font-size:11px;font-weight:800;letter-spacing:1.5px}
+        .instructor-dashboard .dashboard-header>div:first-child{padding-top:22px}
+        .instructor-dashboard .dashboard-header h1{font-size:32px!important;line-height:1.1;margin:0 0 12px!important;color:#302116}
+        .instructor-dashboard .dashboard-header p{font-size:14px!important;color:#9b826c}
+        .instructor-dashboard .dashboard-header strong{color:#df6912}
+        .instructor-dashboard .dashboard-top-actions{gap:10px!important}
+        .instructor-dashboard .dashboard-top-actions .btn{height:44px;min-height:44px;padding:10px 16px;border-radius:10px;font-size:13px!important;font-weight:700}
+        .instructor-stats{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:14px!important;margin-bottom:30px!important}
+        .instructor-stats>div{min-height:166px!important;padding:20px!important;border-radius:16px!important;box-shadow:0 7px 18px rgba(111,69,29,.05);justify-content:flex-start!important}
+        .instructor-stats>div:after{width:120px;height:120px;right:-25px;bottom:-34px}
+        .instructor-stats .stat-heading{gap:11px}
+        .instructor-stats .stat-heading p{font-size:13px!important;font-weight:700}
+        .instructor-stats .stat-icon{width:44px;height:44px;border-radius:12px}
+        .instructor-stats>div>p:nth-of-type(1){margin-top:auto!important;font-size:42px!important}
+        .instructor-stats>div>p:last-child{font-size:12px!important;margin-top:6px!important}
+        .instructor-dashboard .dashboard-tabs{margin:0!important;padding:0 4px;border-bottom:1px solid rgba(236,160,83,.3)!important}
+        .instructor-dashboard .btn--tab{height:52px;min-height:52px;padding:12px 20px!important;font-size:13px}
+        .instructor-dashboard .dashboard-view{padding-top:20px}
+        .instructor-dashboard #groups-view>div>.card{min-height:132px;padding:22px 24px!important;border-radius:15px!important;background:rgba(255,255,255,.8)!important;box-shadow:0 5px 16px rgba(111,69,29,.04)!important}
+        .instructor-dashboard #groups-view h3{font-size:17px!important;margin-bottom:8px!important}
+        .instructor-dashboard #groups-view>div>.card .btn{min-width:145px;padding:11px 16px!important;font-size:13px}
+        .instructor-dashboard #groups-view>div>.card>div:nth-child(2){margin-top:4px}
+        @media (max-width:900px){.instructor-dashboard{margin:16px auto 40px!important;padding:24px!important}.instructor-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+        @media (max-width:640px){.instructor-dashboard{margin:10px 0 28px!important;padding:18px!important;border-radius:18px}.instructor-dashboard .dashboard-header{align-items:flex-start!important;padding-bottom:18px}.instructor-dashboard .dashboard-header h1{font-size:26px!important}.instructor-dashboard .dashboard-header>div:first-child{padding-top:20px}.instructor-dashboard .dashboard-top-actions{gap:8px!important}.instructor-stats{grid-template-columns:1fr 1fr!important;gap:10px!important}.instructor-stats>div{min-height:140px!important;padding:15px!important}.instructor-stats>div>p:nth-of-type(1){font-size:34px!important}.instructor-dashboard #groups-view>div>.card{min-height:0;padding:18px!important}}
+        @media (max-width:430px){.instructor-dashboard{padding:14px!important}.instructor-dashboard .dashboard-header h1{font-size:23px!important}.instructor-stats{grid-template-columns:1fr!important}.instructor-dashboard .dashboard-tabs .btn--tab{padding:10px 13px!important}}
     
     @media (max-width: 768px) {
         .dashboard-header {
