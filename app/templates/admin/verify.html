@@ -84,7 +84,6 @@
     // Add course selector validation
     const courseSelector = document.getElementById("courseSelector");
     const cameraDiv = document.getElementById("qrReader");
-    const cameraControls = document.getElementById("cameraControls");
 
     function updateCameraAvailability() {
         const courseSelected = courseSelector && courseSelector.value;
@@ -110,7 +109,6 @@
 <script src="{{ url_for('static', filename='html5-qrcode.min.js') }}"></script>
 <script>
     window.CHECK8_VERIFY_JSON_URL = "{{ url_for('admin.verify_json') }}";
-    window.CHECK8_SET_STATUS_URL = "{{ url_for('admin.set_status') }}";
 
     console.log('Html5Qrcode library status:', window.Html5Qrcode ? 'LOADED' : 'NOT LOADED');
 

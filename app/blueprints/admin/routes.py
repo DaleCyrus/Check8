@@ -6,7 +6,7 @@ import tempfile
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for, jsonify, session
 from flask_login import current_user, login_required
 from sqlalchemy import or_
-from sqlalchemy.exc import OperationalError, IntegrityError
+from sqlalchemy.exc import OperationalError
 import time
 
 from ...extensions import db
@@ -113,7 +113,7 @@ def admin_dashboard():
     students = db.session.execute(
            db.select(User).where(User.role == Role.STUDENT.value).order_by(User.student_number.asc())
     ).scalars().all()
-    instructors = db.session.execute(
+    instructor_users = db.session.execute(
         db.select(User).where(User.role.in_([Role.INSTRUCTOR.value, Role.FACULTY.value])).order_by(User.full_name.asc())
     ).scalars().all()
     courses = db.session.execute(db.select(Course).order_by(Course.code.asc())).scalars().all()
@@ -121,7 +121,7 @@ def admin_dashboard():
     return render_template(
         "admin/admin_dashboard.html",
         students=students,
-        instructors=instructors,
+        instructors=instructor_users,
         courses=courses,
         groups=groups,
     )
@@ -266,8 +266,6 @@ def dashboard():
     assigned_courses = db.session.execute(
         db.select(Course).join(InstructorCourse).where(InstructorCourse.user_id == current_user.id)
     ).scalars().all()
-    
-    assigned_faculty_ids = [f.id for f in assigned_faculties]
     
     if not assigned_courses:
         # If instructor has no course assignments, show empty dashboard
@@ -475,8 +473,9 @@ def verify():
         course_id_str = request.form.get("course_id")
         course_id = int(course_id_str) if course_id_str else None
         
-        student = verify_student_token(token)
-        if not student:
+        token_payload = verify_student_token(token)
+        student = db.session.get(User, token_payload.get("user_id")) if token_payload else None
+        if not student or not student.is_student:
             flash("Invalid or tampered QR token.", "error")
         elif not course_id:
             flash("Please select a course.", "error")
@@ -533,8 +532,9 @@ def verify_json():
     if not instructor_assignment:
         return jsonify({"ok": False, "error": "You are not assigned to this course"}), 403
     
-    student = verify_student_token(token)
-    if not student:
+    token_payload = verify_student_token(token)
+    student = db.session.get(User, token_payload.get("user_id")) if token_payload else None
+    if not student or not student.is_student:
         return jsonify({"ok": False, "error": "Invalid token"}), 400
 
     # PER-COURSE VERIFICATION: Check if student is enrolled in THIS SPECIFIC COURSE
@@ -587,12 +587,6 @@ def search_students():
 
         if not query or len(query) < 2:
             return jsonify({"ok": False, "error": "Search query must be at least 2 characters"}), 400
-
-        # Get only courses the instructor is directly assigned to teach
-        assigned_courses = db.session.execute(
-            db.select(Course).join(InstructorCourse).where(InstructorCourse.user_id == current_user.id)
-        ).scalars().all()
-        assigned_course_ids = [c.id for c in assigned_courses]
 
         # Search for all students
         students = db.session.execute(

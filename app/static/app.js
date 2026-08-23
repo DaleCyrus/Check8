@@ -146,7 +146,7 @@ function setupQrScanner() {
     if (!box) return;
     
     // Determine status display
-    let statusIcon = "❓";
+    let statusIcon = '<svg viewBox="0 0 64 64" aria-hidden="true" style="width: 1em; height: 1em; display: block;"><circle cx="32" cy="32" r="32" fill="#e4f7ec"/><circle cx="32" cy="24" r="9" fill="#69c184"/><path d="M15 51c1.8-9.3 8.1-14 17-14s15.2 4.7 17 14H15Z" fill="#69c184"/></svg>';
     let statusColor = "#ff9800"; // orange for pending
     
     if (state === "cleared") {
@@ -164,15 +164,9 @@ function setupQrScanner() {
           <div style="font-weight: 700; font-size: 1.1em; margin-bottom: 0.5rem; word-break: break-word;">${studentName}</div>
           <div style="font-size: 0.9em; color: #bfa074; margin-bottom: 0.75rem; word-break: break-all;"><strong>ID:</strong> ${studentNo}</div>
           ${note ? `<div style="font-size: 0.85em; color: #bfa074; margin-bottom: 0.75rem; font-style: italic; border-left: 2px solid ${statusColor}; padding-left: 0.75rem;">${note}</div>` : ''}
-          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-top: 1rem;">
+          <div style="display: grid; grid-template-columns: 1fr; gap: 0.75rem; margin-top: 1rem;">
             <button id="btnApprove" class="btn btn--sm" style="background: #22c55e; border: none; color: white; cursor: pointer; padding: 0.6rem 0.75rem; border-radius: 8px; font-size: 0.9em; font-weight: 600; transition: all 0.2s;" data-student="${studentId}" data-course="${courseId}" data-note="${note || ''}">
               ✓ Approve
-            </button>
-            <button id="btnPending" class="btn btn--sm" style="background: #ff9800; border: none; color: white; cursor: pointer; padding: 0.6rem 0.75rem; border-radius: 8px; font-size: 0.9em; font-weight: 600; transition: all 0.2s;" data-student="${studentId}" data-course="${courseId}" data-note="${note || ''}">
-              ◉ Pending
-            </button>
-            <button id="btnDecline" class="btn btn--sm" style="background: #ef4444; border: none; color: white; cursor: pointer; padding: 0.6rem 0.75rem; border-radius: 8px; font-size: 0.9em; font-weight: 600; transition: all 0.2s;" data-student="${studentId}" data-course="${courseId}" data-note="${note || ''}">
-              ✕ Decline
             </button>
           </div>
         </div>
@@ -184,24 +178,20 @@ function setupQrScanner() {
     
     // Attach event listeners to buttons
     const btnApprove = document.getElementById("btnApprove");
-    const btnPending = document.getElementById("btnPending");
-    const btnDecline = document.getElementById("btnDecline");
     
     if (btnApprove) {
       btnApprove.addEventListener("click", () => {
         updateStudentStatus(studentId, courseId, "cleared", btnApprove, note);
       });
     }
-    if (btnPending) {
-      btnPending.addEventListener("click", () => {
-        updateStudentStatus(studentId, courseId, "pending", btnPending, note);
-      });
-    }
-    if (btnDecline) {
-      btnDecline.addEventListener("click", () => {
-        updateStudentStatus(studentId, courseId, "blocked", btnDecline, note);
-      });
-    }
+  }
+
+  function prepareForNextScan() {
+    const input = document.getElementById("tokenInput");
+    if (input) input.value = "";
+    window.setTimeout(() => {
+      lastToken = null;
+    }, 1000);
   }
 
   async function updateStudentStatus(studentId, courseId, newState, buttonEl, note) {
@@ -294,6 +284,7 @@ function setupQrScanner() {
         data.student.id,
         data.course ? data.course.id : null
       );
+      prepareForNextScan();
     } catch (e) {
       renderResult(false, `<div class="resultLine"><strong>Invalid</strong></div><div class="muted small">${e.message}</div>`);
     }
@@ -357,8 +348,10 @@ function setupQrScanner() {
               data.student.id,
               data.course ? data.course.id : null
             );
+            prepareForNextScan();
           } catch (e) {
             renderResult(false, `<div class="resultLine"><strong>Invalid</strong></div><div class="muted small">${e.message}</div>`);
+            prepareForNextScan();
           }
         },
         () => {}
