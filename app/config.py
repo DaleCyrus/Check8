@@ -13,20 +13,21 @@ class Config:
     INSTANCE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "instance")
     os.makedirs(INSTANCE_PATH, exist_ok=True)
     
-    DATABASE_URL = os.getenv("DATABASE_URL")
-    if not DATABASE_URL:
-        DATABASE_URL = f"sqlite:///{os.path.join(INSTANCE_PATH, 'check8_fixed.db')}"
+    _database_url = os.getenv("DATABASE_URL")
+    if not _database_url:
+        _database_url = f"sqlite:///{os.path.join(INSTANCE_PATH, 'check8_fixed.db')}"
     
     # Fix Render's postgresql:// to use psycopg2 driver
-    if DATABASE_URL and DATABASE_URL.startswith("postgresql://"):
-        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
+    if _database_url and _database_url.startswith("postgresql://"):
+        _database_url = _database_url.replace("postgresql://", "postgresql+psycopg2://", 1)
     
-    SQLALCHEMY_DATABASE_URI = DATABASE_URL
+    DATABASE_URL = _database_url
+    SQLALCHEMY_DATABASE_URI = _database_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Database engine options
-    if 'sqlite' in DATABASE_URL:
-        SQLALCHEMY_ENGINE_OPTIONS = {
+    if 'sqlite' in _database_url:
+        _engine_options = {
             'connect_args': {
                 'check_same_thread': False,
                 'timeout': 10.0,
@@ -37,12 +38,14 @@ class Config:
         }
     else:
         # PostgreSQL settings
-        SQLALCHEMY_ENGINE_OPTIONS = {
+        _engine_options = {
             'pool_size': 20,
             'pool_recycle': 3600,
             'pool_pre_ping': True,
             'max_overflow': 40,
         }
+
+    SQLALCHEMY_ENGINE_OPTIONS = _engine_options
     
     # Security settings for production
     SESSION_COOKIE_SECURE = FLASK_ENV == "production"
@@ -52,7 +55,7 @@ class Config:
     
     # Email configuration
     MAIL_SERVER = os.getenv("MAIL_SERVER", "smtp.gmail.com")
-    MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
+    MAIL_PORT = int(os.getenv("MAIL_PORT", "587"))
     MAIL_USE_TLS = os.getenv("MAIL_USE_TLS", "True") == "True"
     MAIL_USERNAME = os.getenv("MAIL_USERNAME", "")
     MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "")
@@ -65,7 +68,7 @@ class Config:
             from sqlalchemy import event, Engine
             
             @event.listens_for(Engine, "connect")
-            def set_sqlite_pragma(dbapi_conn, connection_record):
+            def set_sqlite_pragma(dbapi_conn, _connection_record):
                 cursor = dbapi_conn.cursor()
                 cursor.execute("PRAGMA journal_mode=WAL")  # Write-Ahead Logging for concurrency
                 cursor.execute("PRAGMA synchronous=NORMAL")  # Less sync overhead

@@ -1,7 +1,8 @@
 import enum
-from datetime import datetime
+from datetime import datetime, timezone
+from typing import Any, cast
 
-from flask_login import UserMixin
+from flask_login import UserMixin  # type: ignore[import-untyped]
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from .extensions import db, login_manager
@@ -106,7 +107,7 @@ class StudentCourse(db.Model):
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     role = db.Column(db.String(20), nullable=False, index=True)
-    is_active = db.Column(db.Boolean, nullable=False, default=True)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)  # type: ignore[assignment]
 
     # Student login field
     student_number = db.Column(db.String(32), unique=True, nullable=True, index=True)
@@ -141,40 +142,43 @@ class User(UserMixin, db.Model):
     qr_salt = db.Column(db.String(64), nullable=True)
 
     @property
-    def assigned_courses(self):
+    def assigned_courses(self) -> list[Course]:
         """Get all courses assigned to this user (for instructor users)"""
         if self.is_faculty:
-            return [assignment.course for assignment in self.course_assignments]
+            assignments = cast(list[InstructorCourse], self.course_assignments)
+            return [cast(Course, assignment.course) for assignment in assignments]
         return []
 
     @property
-    def enrolled_courses(self):
+    def enrolled_courses(self) -> list[Course]:
         """Get all courses enrolled by this student"""
         if self.is_student:
-            return [enrollment.course for enrollment in self.student_courses]
+            enrollments = cast(list[StudentCourse], self.student_courses)
+            return [cast(Course, enrollment.course) for enrollment in enrollments]
         return []
 
     @property
-    def assigned_faculties(self):
+    def assigned_faculties(self) -> list[Faculty]:
         """Get all faculties assigned to this user (for faculty users)"""
         if self.is_faculty:
-            return [assignment.faculty for assignment in self.faculty_assignments]
+            assignments = cast(list[FacultyAssignment], self.faculty_assignments)
+            return [cast(Faculty, assignment.faculty) for assignment in assignments]
         return []
 
     @property
-    def primary_faculty(self):
+    def primary_faculty(self) -> Faculty | None:
         """Get the first assigned faculty (for backward compatibility)"""
         faculties = self.assigned_faculties
         return faculties[0] if faculties else None
 
     @property
-    def faculty_id(self):
+    def faculty_id(self) -> int | None:
         """Backward compatibility property"""
         primary = self.primary_faculty
         return primary.id if primary else None
 
     @property
-    def faculty(self):
+    def faculty(self) -> Faculty | None:
         """Backward compatibility property"""
         return self.primary_faculty
 
@@ -200,14 +204,14 @@ class User(UserMixin, db.Model):
     def is_admin(self) -> bool:
         return self.role == Role.ADMIN.value
 
-    def get_roles_for_faculty(self, faculty_id: int):
+    def get_roles_for_faculty(self, faculty_id: int) -> list[FacultyRole]:
         """Get all roles this user has in a specific faculty"""
         roles = db.session.query(FacultyUserRole).filter_by(
             user_id=self.id, faculty_id=faculty_id
         ).all()
         return [FacultyRole(role.role) for role in roles]
 
-    def has_faculty_role(self, faculty_id: int, role) -> bool:
+    def has_faculty_role(self, faculty_id: int, role: FacultyRole | str) -> bool:
         """Check if user has a specific role in a faculty"""
         role_value = role.value if isinstance(role, FacultyRole) else role
         return db.session.query(FacultyUserRole).filter_by(
@@ -234,7 +238,7 @@ class ClearanceStatus(db.Model):
 
     state = db.Column(db.String(20), nullable=False, default=ClearanceState.PENDING.value)
     note = db.Column(db.String(255), nullable=True)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     student = db.relationship("User", foreign_keys=[student_id])
     course = db.relationship("Course", foreign_keys=[course_id], back_populates="clearance_statuses")
@@ -253,8 +257,8 @@ class StudentGroup(db.Model):
     created_by_user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     name = db.Column(db.String(255), nullable=False)
     description = db.Column(db.String(500), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Relationships
     faculty = db.relationship("Faculty")
@@ -273,7 +277,7 @@ class StudentGroupMember(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     group_id = db.Column(db.Integer, db.ForeignKey("student_group.id"), nullable=False, index=True)
     student_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
-    added_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    added_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     group = db.relationship("StudentGroup", back_populates="members")
     student = db.relationship("User", foreign_keys=[student_id])
@@ -303,10 +307,10 @@ class FacultyUserRole(db.Model):
 
 
 
-@login_manager.user_loader
+@cast(Any, login_manager).user_loader
 def load_user(user_id: str):
     try:
         return db.session.get(User, int(user_id))
-    except Exception:
+    except ValueError:
         return None
 

@@ -11,3 +11,6 @@ env/
 *.db
 *.db-shm
 *.db-wal
+
+.vscode/settings.json
+/sample_students_2024.csv

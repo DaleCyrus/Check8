@@ -1,6 +1,8 @@
 import os
+
 from dotenv import load_dotenv
 from flask import Flask
+from sqlalchemy.exc import SQLAlchemyError
 
 load_dotenv()
 
@@ -17,13 +19,9 @@ def create_app() -> Flask:
     app.config.from_object("app.config.Config")
 
     # Initialize DB engine options or sqlite pragmas if provided
-    try:
-        from .config import Config as AppConfig
+    from .config import Config as AppConfig
 
-        if hasattr(AppConfig, "init_db"):
-            AppConfig.init_db(app)
-    except Exception:
-        pass
+    AppConfig.init_db(app)
 
     # Initialize extensions and register blueprints
     from .extensions import db, login_manager, mail, csrf
@@ -60,10 +58,38 @@ def create_app() -> Flask:
     with app.app_context():
         try:
             db.create_all()
-        except Exception:
+            _ensure_admin_account()
+        except SQLAlchemyError:
             pass
 
     return app
+
+
+def _ensure_admin_account() -> None:
+    """Create the configured administrator without seeding sample records."""
+    from .extensions import db
+    from .models import Role, User
+
+    email = os.getenv("ADMIN_EMAIL", "admin@gordoncollege.edu.ph").strip().lower()
+    password = os.getenv("ADMIN_PASSWORD", "admin123")
+    if not email or not password:
+        raise ValueError("ADMIN_EMAIL and ADMIN_PASSWORD must be configured")
+
+    user = db.session.execute(db.select(User).where(User.email == email)).scalar_one_or_none()
+    if user is None:
+        user = User()
+        user.role = Role.ADMIN.value
+        user.username = email.split("@", 1)[0]
+        user.full_name = "System Administrator"
+        user.email = email
+        user.is_active = True  # type: ignore[assignment]
+        user.set_password(password)
+        db.session.add(user)
+    else:
+        user.role = Role.ADMIN.value
+        user.is_active = True
+
+    db.session.commit()
 
 
 def _ensure_compatible_schema(app: Flask) -> None:

@@ -3,7 +3,7 @@ import io
 import sqlite3
 import tempfile
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for, jsonify, session
+from flask import Blueprint, abort, flash, redirect, render_template, request, url_for, jsonify, session, make_response
 from flask_login import current_user, login_required
 from sqlalchemy import or_
 from sqlalchemy.exc import OperationalError
@@ -70,6 +70,7 @@ def _student_payload(row):
         "full_name": full_name,
         "department": lowered.get("department"),
         "program": lowered.get("program"),
+        "temporary_password": lowered.get("temporary_password") or lowered.get("password"),
     }
 
 
@@ -110,6 +111,8 @@ def _validate_student_payloads(rows):
 @login_required
 def admin_dashboard():
     _require_admin()
+    # Ensure externally changed database rows are read on every dashboard load.
+    db.session.expire_all()
     students = db.session.execute(
            db.select(User).where(User.role == Role.STUDENT.value).order_by(User.student_number.asc())
     ).scalars().all()
@@ -118,13 +121,17 @@ def admin_dashboard():
     ).scalars().all()
     courses = db.session.execute(db.select(Course).order_by(Course.code.asc())).scalars().all()
     groups = db.session.execute(db.select(StudentGroup).order_by(StudentGroup.name.asc())).scalars().all()
-    return render_template(
+    response = make_response(render_template(
         "admin/admin_dashboard.html",
         students=students,
         instructors=instructor_users,
         courses=courses,
         groups=groups,
-    )
+    ))
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 
 @bp.get("/admin/instructors")
@@ -232,7 +239,7 @@ def import_students_confirm():
             qr_salt=str(__import__("uuid").uuid4()),
             **{key: record.get(key) for key in ("student_number", "email", "last_name", "first_name", "middle_name", "full_name", "department", "program")},
         )
-        user.set_password("student123")
+        user.set_password(record.get("temporary_password") or "student123")
         db.session.add(user)
         added += 1
     db.session.commit()

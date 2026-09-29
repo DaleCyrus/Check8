@@ -15,6 +15,10 @@ services:
       - key: DATABASE_URL
         scope: run_and_build
         sync: false
+      - key: ADMIN_EMAIL
+        value: admin@gordoncollege.edu.ph
+      - key: ADMIN_PASSWORD
+        sync: false
 
 databases:
   - name: check8-db
