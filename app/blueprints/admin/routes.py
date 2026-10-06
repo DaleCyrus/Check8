@@ -54,7 +54,7 @@ def _student_payload(row):
     """Normalize CSV/database rows into the fields accepted by User."""
     lowered = {str(key).strip().lower(): (value or "").strip() for key, value in row.items()}
     student_number = lowered.get("student_number") or lowered.get("student id") or lowered.get("student_id")
-    email = lowered.get("email") or lowered.get("domain_account") or lowered.get("school_email")
+    email = lowered.get("email") or lowered.get("domain_account") or lowered.get("school_email") or ""
     last_name = (lowered.get("last_name") or lowered.get("ln") or "").upper()
     first_name = (lowered.get("first_name") or lowered.get("fn") or "").upper()
     middle_name = (lowered.get("middle_name") or lowered.get("mn") or "").upper()
@@ -144,22 +144,36 @@ def instructors():
     return render_template("admin/instructors.html", instructors=users)
 
 
+@bp.get("/admin/students")
+@login_required
+def students():
+    _require_admin()
+    students = db.session.execute(
+        db.select(User).where(User.role == Role.STUDENT.value).order_by(User.student_number.asc())
+    ).scalars().all()
+    response = make_response(render_template("admin/students.html", students=students))
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
+
 @bp.post("/admin/students/create")
 @login_required
 def create_student():
     _require_admin()
     record = _student_payload(request.form)
     errors = _validate_student_payloads([request.form])[0]["errors"]
-    password = request.form.get("password") or "student123"
+    password = record.pop("temporary_password") or "student123"
     if errors:
         flash("Student was not added: " + ", ".join(errors), "error")
-        return redirect(url_for("admin.admin_dashboard"))
+        return redirect(url_for("admin.students"))
     user = User(role=Role.STUDENT.value, qr_salt=str(__import__("uuid").uuid4()), **record)
     user.set_password(password)
     db.session.add(user)
     db.session.commit()
     flash("Student added successfully.", "success")
-    return redirect(url_for("admin.admin_dashboard"))
+    return redirect(url_for("admin.students"))
 
 
 @bp.post("/admin/students/<int:student_id>/update")
@@ -177,7 +191,7 @@ def update_student(student_id):
     student.program = (request.form.get("program") or student.program or "").strip() or None
     db.session.commit()
     flash("Student record updated.", "success")
-    return redirect(url_for("admin.admin_dashboard"))
+    return redirect(url_for("admin.students"))
 
 
 @bp.post("/admin/students/<int:student_id>/toggle")
@@ -190,7 +204,7 @@ def toggle_student(student_id):
     student.is_active = not student.is_active
     db.session.commit()
     flash("Student record " + ("activated." if student.is_active else "deactivated."), "success")
-    return redirect(url_for("admin.admin_dashboard"))
+    return redirect(url_for("admin.students"))
 
 
 @bp.post("/admin/import-students/preview")
@@ -200,7 +214,7 @@ def import_students_preview():
     upload = request.files.get("file")
     if not upload or not upload.filename:
         flash("Select a CSV or SQLite database file.", "error")
-        return redirect(url_for("admin.admin_dashboard"))
+        return redirect(url_for("admin.students"))
     try:
         if upload.filename.lower().endswith(".csv"):
             rows = list(csv.DictReader(io.StringIO(upload.read().decode("utf-8-sig"))))
@@ -222,7 +236,7 @@ def import_students_preview():
         return render_template("admin/import_students.html", preview=preview)
     except Exception as error:
         flash(f"Could not read import file: {error}", "error")
-        return redirect(url_for("admin.admin_dashboard"))
+        return redirect(url_for("admin.students"))
 
 
 @bp.post("/admin/import-students/confirm")
@@ -244,7 +258,7 @@ def import_students_confirm():
         added += 1
     db.session.commit()
     flash(f"Imported {added} valid student record(s).", "success")
-    return redirect(url_for("admin.admin_dashboard"))
+    return redirect(url_for("admin.students"))
 
 
 def _require_faculty_json(f):

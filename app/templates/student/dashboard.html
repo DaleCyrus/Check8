@@ -1,8 +1,7 @@
 {% extends "base.html" %} {% block title %}Student Dashboard • CHECK8{% endblock %} {% block content %}
-<div class="student-dashboard">
+<div class="student-dashboard" data-clearance-dashboard data-status-url="{{ url_for('student.clearance_status_json') }}">
     <header class="student-dashboard__hero">
         <div>
-            <p class="student-dashboard__eyebrow">CLEARANCE HUB</p>
             <h1>Student Dashboard</h1>
             <p class="student-dashboard__welcome">Welcome back, {{ current_user.first_name or current_user.full_name }}. Keep your clearance progress moving.</p>
         </div>
@@ -13,7 +12,6 @@
     <section class="card student-profile-card">
         <div class="student-card-heading">
             <div>
-                <p class="student-card-heading__eyebrow">STUDENT PROFILE</p>
                 <h2 class="h2">Your information</h2>
             </div>
             <div class="student-avatar" aria-hidden="true">{{ (current_user.first_name or current_user.full_name)[0] }}</div>
@@ -39,13 +37,19 @@
 
         <div class="student-section-heading">
             <div>
-                <p class="student-card-heading__eyebrow">ACADEMIC PROGRESS</p>
                 <h2 class="h2">Clearance status</h2>
             </div>
-            {% if clearances %}<span class="student-record-count">{{ clearances|length }} record{% if clearances|length != 1 %}s{% endif %}</span>{% endif %}
+            <span class="student-record-count" data-clearance-count data-has-clearances {% if not clearances %}hidden{% endif %}>{{ clearances|length }} record{% if clearances|length != 1 %}s{% endif %}</span>
         </div>
-        {% if clearances %}
-        <table class="table student-table">
+        {% set progress = namespace(approved=0) %}
+        {% for cs, course, faculty, instructor_names in clearances %}
+          {% if cs.state == 'cleared' %}{% set progress.approved = progress.approved + 1 %}{% endif %}
+        {% endfor %}
+        <div class="clearance-progress" data-has-clearances {% if not clearances %}hidden{% endif %}>
+            <div><strong data-clearance-summary>{{ progress.approved }} of {{ clearances|length }} courses approved</strong><span data-clearance-percent>{{ (progress.approved / (clearances|length) * 100)|int if clearances else 0 }}%</span></div>
+            <progress value="{{ progress.approved }}" max="{{ clearances|length or 1 }}" aria-label="Course clearance progress">{{ progress.approved }} of {{ clearances|length }}</progress>
+        </div>
+        <table class="table student-table" data-has-clearances {% if not clearances %}hidden{% endif %}>
             <thead>
                 <tr>
                     <th>Course</th>
@@ -54,9 +58,9 @@
                     <th>Note</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody data-clearance-rows>
                 {% for cs, course, faculty, instructor_names in clearances %}
-                <tr>
+                <tr data-clearance-id="{{ cs.id }}" data-state="{{ cs.state }}">
                     <td data-label="Course"><strong>{{ course.code }} - {{ course.name }}</strong></td>
                     <td data-label="Instructor">{{ instructor_names }}</td>
                     <td data-label="Status">
@@ -75,23 +79,22 @@
                 {% endfor %}
             </tbody>
         </table>
-        <div style="margin-top: 1rem;">
+        <div style="margin-top: 1rem;" data-has-clearances {% if not clearances %}hidden{% endif %}>
             <a href="{{ url_for('student.download_clearance_pdf') }}" class="btn btn-primary student-download" download>
-                <span aria-hidden="true">↓</span> Download clearance PDF
+                <span aria-hidden="true"><i data-lucide="download" aria-hidden="true"></i></span> Download clearance PDF
             </a>
         </div>
-        {% else %}
-        <p class="muted">You haven't been added to any clearance lists yet.</p>
-        {% endif %}
+        <p class="muted" data-clearance-empty {% if clearances %}hidden{% endif %}>You haven't been added to any clearance lists yet.</p>
+        <p class="muted small" data-clearance-notice role="status" hidden></p>
+        <span class="sr-only" data-clearance-announcement role="status" aria-live="polite"></span>
     </section>
 
     <aside class="card student-qr-card">
         <div class="student-qr-card__heading">
             <div>
-                <p class="student-card-heading__eyebrow">IDENTITY PASS</p>
                 <h2 class="h2">Your QR code</h2>
             </div>
-            <span class="student-qr-card__mark" aria-hidden="true">⌁</span>
+            <span class="student-qr-card__mark" aria-hidden="true"><i data-lucide="qr-code" aria-hidden="true"></i></span>
         </div>
         <p class="muted student-qr-card__intro">Show this QR to faculty for secure, paperless identity verification.</p>
         <div class="qrBox student-qrbox">

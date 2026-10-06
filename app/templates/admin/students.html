@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Students | CHECK8{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+{% block content %}
+<div class="admin-shell">
+  {% include "admin/_sidebar.html" %}
+  <div class="admin-main">
+    <header class="admin-topbar"><div></div><div class="admin-topbar__actions"><strong>Students</strong><form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}" /><button type="submit">Logout&nbsp; <i data-lucide="log-out" aria-hidden="true"></i></button></form></div></header>
+    <div class="admin-content">
+      <div class="admin-title"><h1>Students</h1><p>Manage student records, accounts, and imports.</p></div>
+      <details id="add-student" class="admin-panel admin-create-panel">
+        <summary><span><i data-lucide="user-plus" aria-hidden="true"></i> Add student</span><i data-lucide="plus" class="disclosure-icon" aria-hidden="true"></i></summary>
+        <form method="post" action="{{ url_for('admin.create_student') }}" class="admin-create-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <div class="admin-form-field"><label for="field-last_name">LAST NAME (LN)</label><input class="input input--uppercase" name="last_name" id="field-last_name" placeholder="Enter last name" required /></div>
+          <div class="admin-form-field"><label for="field-first_name">FIRST NAME (FN)</label><input class="input input--uppercase" name="first_name" id="field-first_name" placeholder="Enter first name" required /></div>
+          <div class="admin-form-field"><label for="field-middle_name">MIDDLE NAME (MN)</label><input class="input input--uppercase" name="middle_name" id="field-middle_name" placeholder="Enter middle name" /></div>
+          <div class="admin-form-field"><label for="field-student_number">STUDENT ID NUMBER</label><input class="input" name="student_number" id="field-student_number" placeholder="Enter student ID" required /></div>
+          <div class="admin-form-field admin-form-field--email"><label for="field-email">EMAIL</label><input class="input" name="email" id="field-email" placeholder="student@gordoncollege.edu.ph" type="email" required /></div>
+          <div class="admin-form-field"><label for="field-department">DEPARTMENT</label><input class="input" name="department" id="field-department" placeholder="Select department" /></div>
+          <div class="admin-form-field"><label for="field-program">PROGRAM</label><input class="input" name="program" id="field-program" placeholder="Select program" /></div>
+          <div class="admin-form-field admin-form-field--password"><label for="temporary_password">TEMPORARY PASSWORD</label><div class="password-field"><input id="temporary_password" class="input" name="password" placeholder="Enter temporary password" type="password" /><button type="button" class="password-toggle" data-password-toggle data-password-target="temporary_password" aria-label="Show password" aria-pressed="false"><i data-lucide="eye" aria-hidden="true"></i></button></div></div>
+          <button class="btn admin-create-submit" type="submit"><i data-lucide="plus" aria-hidden="true"></i> &nbsp; Add Student</button>
+        </form>
+      </details>
+
+      <section id="students" class="admin-panel admin-students-panel"><div class="admin-panel__heading"><div><h2>Students</h2><p>{{ students|length }} student record{{ '' if students|length == 1 else 's' }}</p></div><label class="admin-search"><i data-lucide="search" aria-hidden="true"></i><input type="search" aria-label="Search students..." placeholder="Search students..." /></label></div>
+        <div class="admin-table-wrap" tabindex="0" role="region" aria-label="Students"><table class="admin-table"><thead><tr><th>STUDENT ID</th><th>NAME</th><th>EMAIL</th><th>DEPARTMENT</th><th>PROGRAM</th><th>STATUS</th><th>ACTIONS</th></tr></thead><tbody>{% for student in students %}<tr><td>{{ student.student_number }}</td><td><b>{{ student.full_name }}</b></td><td>{{ student.email }}</td><td>{{ student.department or '—' }}</td><td>{{ student.program or '—' }}</td><td><span class="admin-status admin-status--{{ 'active' if student.is_active else 'inactive' }}">{{ 'Active' if student.is_active else 'Inactive' }}</span></td><td><form method="post" action="{{ url_for('admin.toggle_student', student_id=student.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}" /><button class="admin-action" type="submit">{{ 'Deactivate' if student.is_active else 'Activate' }}</button></form></td></tr>{% else %}<tr><td colspan="7">No students yet.</td></tr>{% endfor %}</tbody></table></div>
+        <div class="admin-table-footer">Showing {{ students|length }} students </div>
+      </section>
+
+      <section id="import" class="admin-panel admin-import-panel"><div class="admin-panel__heading"><div><h2>Import Students</h2><p>Upload a CSV or compatible SQLite .db file to preview, validate, and confirm records.</p></div></div><form method="post" action="{{ url_for('admin.import_students_preview') }}" enctype="multipart/form-data" class="admin-import-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}" /><input type="file" aria-label="Import file" name="file" accept=".csv,.db" required /><button class="btn admin-create-submit" type="submit"><i data-lucide="upload" aria-hidden="true"></i> &nbsp; Import Students</button></form></section>
+    </div>
+  </div>
+</div>
+{% endblock %}

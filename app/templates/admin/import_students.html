@@ -10,14 +10,14 @@
       <tbody>{% for row in preview %}<tr>
         <td>{{ row.row_number }}</td><td>{{ row.student_number or '—' }}</td>
         <td>{{ row.full_name or '—' }}</td><td>{{ row.email or '—' }}</td>
-        <td>{% if row.errors %}<span style="color:#b42318;">{{ row.errors|join(', ') }}</span>{% else %}<span style="color:#16794a;">Valid</span>{% endif %}</td>
+        <td>{% if row.errors %}<span style="color:#98400e;">{{ row.errors|join(', ') }}</span>{% else %}<span style="color:#98400e;">Valid</span>{% endif %}</td>
       </tr>{% else %}<tr><td colspan="5">No records found.</td></tr>{% endfor %}</tbody>
     </table>
   </div>
   <form method="post" action="{{ url_for('admin.import_students_confirm') }}" style="margin-top:18px;">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
     <button class="btn" type="submit">Confirm Import</button>
-    <a class="btn btn--ghost" href="{{ url_for('admin.admin_dashboard') }}">Cancel</a>
+    <a class="btn btn--ghost" href="{{ url_for('admin.students') }}">Cancel</a>
   </form>
 </section>
 {% endblock %}

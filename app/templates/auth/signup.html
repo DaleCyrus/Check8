@@ -4,22 +4,22 @@
 {% block content %}
 <div class="signup-shell">
     <section class="signup-card">
-        <button type="button" class="signup-back" onclick="window.history.back()"><span>←</span> Back</button>
+        <a class="signup-back" href="{{ url_for('auth.login') }}"><span><i data-lucide="arrow-left" aria-hidden="true"></i></span> Back</a>
         <div class="signup-heading">
-            <div class="signup-heading__icon">♙<small>+</small></div>
+            <div class="signup-heading__icon"><i data-lucide="user-round" aria-hidden="true"></i><small>+</small></div>
             <div><h1>Create Account</h1><p>Choose the account type to continue.</p></div>
         </div>
 
         <div class="signup-roles">
             <a class="signup-role signup-role--student" href="{{ url_for('auth.signup_student') }}">
-                <span class="signup-role__icon">⌂</span>
+                <span class="signup-role__icon"><i data-lucide="layout-dashboard" aria-hidden="true"></i></span>
                 <span class="signup-role__copy"><strong>Student</strong><small>Create a student account to access your<br class="signup-desktop-break"> courses, clearance, and more.</small></span>
-                <span class="signup-role__arrow">›</span>
+                <span class="signup-role__arrow"><i data-lucide="chevron-right" aria-hidden="true"></i></span>
             </a>
             <a class="signup-role signup-role--instructor" href="{{ url_for('auth.signup_instructor') }}">
-                <span class="signup-role__icon">♙</span>
+                <span class="signup-role__icon"><i data-lucide="user-round" aria-hidden="true"></i></span>
                 <span class="signup-role__copy"><strong>Instructor</strong><small>Create an instructor account to manage your<br class="signup-desktop-break"> classes and clearance requests.</small></span>
-                <span class="signup-role__arrow">›</span>
+                <span class="signup-role__arrow"><i data-lucide="chevron-right" aria-hidden="true"></i></span>
             </a>
         </div>
 

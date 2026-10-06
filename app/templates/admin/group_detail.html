@@ -4,7 +4,7 @@
 {% block content %}
   <section class="card">
     <!-- Header -->
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2.5rem;">
+    <div class="group-detail-heading">
       <div>
         <h1 class="h1">{{ group.name }}</h1>
         <p class="muted" style="margin: 0.5rem 0 0.25rem 0;">{{ group.faculty.name }}</p>
@@ -16,15 +16,15 @@
     </div>
 
     <!-- Add Students Section -->
-    <div style="background: linear-gradient(135deg, #fff9f0 0%, #ffe8d1 100%); border: 1px solid rgba(255, 152, 0, 0.3); border-radius: 0.75rem; padding: 2rem; margin-bottom: 2.5rem;">
+    <div class="group-enrollment">
       <h2 class="h2" style="margin-top: 0; color: var(--accent-dark);">Add Students to Class</h2>
       <p class="muted" style="margin-bottom: 1.5rem;">Select students from the list below to add them to this class.</p>
       
-      <div style="display: grid; grid-template-columns: 1fr 320px; gap: 2rem; margin-bottom: 1.5rem;">
+      <div class="group-enrollment-grid">
         <!-- Available Students List -->
         <div>
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-            <label class="label" style="margin-bottom: 0;">Available Students</label>
+            <label for="filterInput" class="label" style="margin-bottom: 0;">Available Students</label>
             {% if available_students %}
               <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 500; font-size: 0.9rem; color: var(--accent);">
                 <input type="checkbox" id="selectAllCheckbox" style="width: 18px; height: 18px; cursor: pointer;" />
@@ -106,7 +106,7 @@
                 {% set student = member_data.student %}
                 {% set clearance_statuses = member_data.clearance_statuses %}
                 <tr>
-                  <td data-label="Student No."><code style="background: #f3f4f6; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">{{ student.student_number }}</code></td>
+                  <td data-label="Student No."><code style="background: #fff8f2; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">{{ student.student_number }}</code></td>
                   <td data-label="Name">{{ student.full_name }}</td>
                   <td data-label="Department">{{ student.department or '—' }}</td>
                   <td data-label="Program">{{ student.program or '—' }}</td>
@@ -124,7 +124,7 @@
                           <span class="badge badge--blocked">Rejected</span>
                         {% endif %}
                       {% else %}
-                        <span class="badge" style="background: #f3f4f6; color: #6b7280;">—</span>
+                        <span class="badge" style="background: #fff8f2; color: #a8440b;">—</span>
                       {% endif %}
                     </td>
                   {% endfor %}
@@ -132,7 +132,7 @@
                   <td data-label="Action" style="text-align: center;">
                     <form method="post" action="{{ url_for('admin.remove_student_from_group', group_id=group.id, student_id=student.id) }}" style="display: inline;" onsubmit="return confirm('Remove this student?');">
                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                      <button type="submit" class="btn btn--sm btn--ghost" style="color: #dc2626; font-size: 0.85rem;">Remove</button>
+                      <button type="submit" class="btn btn--sm btn--ghost" style="color: #a8440b; font-size: 0.85rem;">Remove</button>
                     </form>
                   </td>
                 </tr>
@@ -149,7 +149,7 @@
     </div>
 
     <!-- Quick Actions -->
-    <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e5e7eb;">
+    <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #f2c6a7;">
       <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
         <a href="{{ url_for('admin.list_groups') }}" class="btn btn--ghost">View All Groups</a>
         <a href="{{ url_for('admin.dashboard') }}" class="btn btn--ghost">Dashboard</a>
@@ -248,10 +248,10 @@
           .map(s => `
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #ffe8d1; border: 1px solid rgba(255, 152, 0, 0.3); border-radius: 0.25rem; margin-bottom: 0.5rem;">
               <div style="flex: 1;">
-                <div style="font-weight: 500; font-size: 0.9rem; color: #1f2937;">${s.name}</div>
-                <div style="font-size: 0.8rem; color: #666;">${s.student_number}</div>
+                <div style="font-weight: 500; font-size: 0.9rem; color: #632600;">${s.name}</div>
+                <div style="font-size: 0.8rem; color: #98400e;">${s.student_number}</div>
               </div>
-              <button type="button" onclick="toggleStudent(${s.id}, '${s.name.replace(/'/g, "\\'")}', '${s.student_number.replace(/'/g, "\\'")}'); event.preventDefault();" style="background: none; border: none; cursor: pointer; color: #dc2626; font-weight: bold; padding: 0.25rem; font-size: 1.2rem; line-height: 1;">✕</button>
+              <button type="button" onclick="toggleStudent(${s.id}, '${s.name.replace(/'/g, "\\'")}', '${s.student_number.replace(/'/g, "\\'")}'); event.preventDefault();" style="background: none; border: none; cursor: pointer; color: #a8440b; font-weight: bold; padding: 0.25rem; font-size: 1.2rem; line-height: 1;">✕</button>
             </div>
           `)
           .join('');
@@ -272,7 +272,7 @@
       margin-bottom: 0.5rem;
       font-weight: 600;
       font-size: 0.9rem;
-      color: #1f2937;
+      color: #632600;
     }
 
     .student-row:hover {
@@ -288,18 +288,18 @@
     }
 
     .badge--pending {
-      background: #fef3c7;
+      background: #fff8f2;
       color: #92400e;
     }
 
     .badge--cleared {
-      background: #dcfce7;
-      color: #166534;
+      background: #fff8f2;
+      color: #632600;
     }
 
     .badge--blocked {
-      background: #fee2e2;
-      color: #991b1b;
+      background: #fffefd;
+      color: #98400e;
     }
 
     /* Responsive Table */
@@ -340,11 +340,11 @@
         margin-bottom: 1.25rem;
         border-radius: 0.5rem;
         overflow: hidden;
-        border: 1px solid #e5e7eb;
+        border: 1px solid #f2c6a7;
       }
 
       .table tr:hover {
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 2px 8px rgba(168, 68, 11, 0.08);
       }
 
       .table td {
@@ -352,7 +352,7 @@
         grid-template-columns: 100px 1fr;
         gap: 0.75rem;
         padding: 0.75rem 1rem;
-        border-bottom: 1px solid #f3f4f6;
+        border-bottom: 1px solid #fff8f2;
         align-items: start;
       }
 
@@ -361,7 +361,7 @@
         font-weight: 700;
         font-size: 0.7rem;
         text-transform: uppercase;
-        color: #6b7280;
+        color: #a8440b;
         letter-spacing: 0.5px;
       }
 

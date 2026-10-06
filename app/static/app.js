@@ -40,24 +40,14 @@ function setupPasswordPeek() {
   document.querySelectorAll("[data-password-toggle]").forEach((button) => {
     const input = document.getElementById(button.dataset.passwordTarget);
     if (!input) return;
-    let hideTimer;
-
     button.addEventListener("click", () => {
-      clearTimeout(hideTimer);
       const showing = input.type === "text";
       input.type = showing ? "password" : "text";
-      button.textContent = showing ? "👁" : "🙈";
+      button.innerHTML = `<i data-lucide="${showing ? 'eye' : 'eye-off'}"></i>`;
+      window.lucide?.createIcons();
       button.setAttribute("aria-label", showing ? "Show password" : "Hide password");
+      button.title = showing ? "Show password" : "Hide password";
       button.setAttribute("aria-pressed", String(!showing));
-
-      if (!showing) {
-        hideTimer = setTimeout(() => {
-          input.type = "password";
-          button.textContent = "👁";
-          button.setAttribute("aria-label", "Show password");
-          button.setAttribute("aria-pressed", "false");
-        }, 1500);
-      }
     });
   });
 }
@@ -137,8 +127,8 @@ function setupQrScanner() {
     const box = document.getElementById("verifyResult");
     if (!box) return;
     box.innerHTML = html;
-    box.style.borderColor = ok ? "rgba(54,211,153,.55)" : "rgba(251,113,133,.55)";
-    box.style.background = ok ? "rgba(54,211,153,.08)" : "rgba(251,113,133,.08)";
+    box.style.borderColor = ok ? "rgba(168,68,11,.55)" : "rgba(122,48,8,.55)";
+    box.style.background = ok ? "rgba(255,130,46,.08)" : "rgba(255,130,46,.16)";
   }
 
   function renderStatusPopup(state, studentName, studentNo, note, studentId, courseId) {
@@ -146,15 +136,15 @@ function setupQrScanner() {
     if (!box) return;
     
     // Determine status display
-    let statusIcon = '<svg viewBox="0 0 64 64" aria-hidden="true" style="width: 1em; height: 1em; display: block;"><circle cx="32" cy="32" r="32" fill="#e4f7ec"/><circle cx="32" cy="24" r="9" fill="#69c184"/><path d="M15 51c1.8-9.3 8.1-14 17-14s15.2 4.7 17 14H15Z" fill="#69c184"/></svg>';
-    let statusColor = "#ff9800"; // orange for pending
+    let statusIcon = '<svg viewBox="0 0 64 64" aria-hidden="true" style="width: 1em; height: 1em; display: block;"><circle cx="32" cy="32" r="32" fill="#fff0e5"/><circle cx="32" cy="24" r="9" fill="#ff822e"/><path d="M15 51c1.8-9.3 8.1-14 17-14s15.2 4.7 17 14H15Z" fill="#ff822e"/></svg>';
+    let statusColor = "#a8440b"; // orange for pending
     
     if (state === "cleared") {
-      statusIcon = "✅";
-      statusColor = "#22c55e"; // green
+      statusIcon = '<i data-lucide="circle-check" aria-hidden="true"></i>';
+      statusColor = "#a8440b"; // approved
     } else if (state === "blocked") {
-      statusIcon = "❌";
-      statusColor = "#ef4444"; // red
+      statusIcon = '<i data-lucide="circle-x" aria-hidden="true"></i>';
+      statusColor = "#7a3008"; // declined
     }
     
     box.innerHTML = `
@@ -162,10 +152,10 @@ function setupQrScanner() {
         <div style="font-size: 3.5em; line-height: 1; animation: scaleIn 0.3s ease-out; flex-shrink: 0;">${statusIcon}</div>
         <div style="flex: 1; min-width: 0;">
           <div style="font-weight: 700; font-size: 1.1em; margin-bottom: 0.5rem; word-break: break-word;">${studentName}</div>
-          <div style="font-size: 0.9em; color: #bfa074; margin-bottom: 0.75rem; word-break: break-all;"><strong>ID:</strong> ${studentNo}</div>
-          ${note ? `<div style="font-size: 0.85em; color: #bfa074; margin-bottom: 0.75rem; font-style: italic; border-left: 2px solid ${statusColor}; padding-left: 0.75rem;">${note}</div>` : ''}
+          <div style="font-size: 0.9em; color: var(--muted); margin-bottom: 0.75rem; word-break: break-all;"><strong>ID:</strong> ${studentNo}</div>
+          ${note ? `<div style="font-size: 0.85em; color: var(--muted); margin-bottom: 0.75rem; font-style: italic; border-left: 2px solid ${statusColor}; padding-left: 0.75rem;">${note}</div>` : ''}
           <div style="display: grid; grid-template-columns: 1fr; gap: 0.75rem; margin-top: 1rem;">
-            <button id="btnApprove" class="btn btn--sm" style="background: #22c55e; border: none; color: white; cursor: pointer; padding: 0.6rem 0.75rem; border-radius: 8px; font-size: 0.9em; font-weight: 600; transition: all 0.2s;" data-student="${studentId}" data-course="${courseId}" data-note="${note || ''}">
+            <button id="btnApprove" class="btn btn--sm" style="background: #a8440b; border: none; color: white; cursor: pointer; padding: 0.6rem 0.75rem; border-radius: 8px; font-size: 0.9em; font-weight: 600; transition: all 0.2s;" data-student="${studentId}" data-course="${courseId}" data-note="${note || ''}">
               ✓ Approve
             </button>
           </div>
@@ -173,7 +163,8 @@ function setupQrScanner() {
       </div>
     `;
     
-    box.style.borderColor = statusColor + "88";
+    window.lucide?.createIcons();
+    box.style.borderColor = statusColor;
     box.style.background = statusColor + "11";
     
     // Attach event listeners to buttons
@@ -228,21 +219,22 @@ function setupQrScanner() {
       if (response.ok) {
         // Show success message
         const box = document.getElementById("verifyResult");
-        const stateIcons = { cleared: "✅", blocked: "❌", pending: "⏳" };
+        const stateIcons = { cleared: '<i data-lucide="circle-check" aria-hidden="true"></i>', blocked: '<i data-lucide="circle-x" aria-hidden="true"></i>', pending: '<i data-lucide="clock" aria-hidden="true"></i>' };
         const stateLabels = { cleared: "Approved", blocked: "Declined", pending: "Pending" };
-        const stateColors = { cleared: "#22c55e", blocked: "#ef4444", pending: "#ff9800" };
+        const stateColors = { cleared: "#a8440b", blocked: "#7a3008", pending: "#a8440b" };
         
         box.innerHTML = `
           <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem;">
             <div style="font-size: 2.5em; animation: scaleIn 0.3s ease-out;">${stateIcons[newState]}</div>
             <div>
               <div style="font-weight: 700; color: ${stateColors[newState]};">Status Updated</div>
-              <div style="font-size: 0.9em; color: #bfa074;">Cleared as: <strong>${stateLabels[newState]}</strong></div>
+              <div style="font-size: 0.9em; color: var(--muted);">Cleared as: <strong>${stateLabels[newState]}</strong></div>
             </div>
           </div>
         `;
         
-        box.style.borderColor = stateColors[newState] + "88";
+        window.lucide?.createIcons();
+        box.style.borderColor = stateColors[newState];
         box.style.background = stateColors[newState] + "11";
       } else {
         console.error("Update failed with status:", response.status, response.statusText);
@@ -315,9 +307,11 @@ function setupQrScanner() {
     }
   }
 
+  document.getElementById("pasteTokenForm")?.addEventListener("submit", handlePasteTokenSubmit);
+
   if (!window.Html5Qrcode) {
     console.error("html5-qrcode library not loaded");
-    el.innerHTML = '<div style="padding: 2rem; text-align: center; color: #2d1600;"><div style="font-size: 2.5em; margin-bottom: 1rem;">❌</div><strong style="font-size: 1.1em; display: block; margin-bottom: 0.5rem;">Camera Not Available</strong><div style="font-size: 0.9em; margin-bottom: 1rem; color: #bfa074;">The QR scanner library could not be loaded.</div><div style="font-size: 0.85em; color: #bfa074;">Please use the <strong>Paste token</strong> section below instead.</div></div>';
+    el.innerHTML = '<div style="padding: 2rem; text-align: center; color: #2d1600;"><div style="font-size: 2.5em; margin-bottom: 1rem;">!</div><strong style="font-size: 1.1em; display: block; margin-bottom: 0.5rem;">Camera Not Available</strong><div style="font-size: 0.9em; margin-bottom: 1rem; color: var(--muted);">The QR scanner library could not be loaded.</div><div style="font-size: 0.85em; color: var(--muted);">Please use the <strong>Paste token</strong> section below instead.</div></div>';
     updateCameraStatus("error", "Library not available");
     return;
   }
@@ -367,7 +361,7 @@ function setupQrScanner() {
       console.error("❌ Camera initialization failed:", errorMsg);
       console.error("Full error:", err);
       updateCameraStatus("error", "Camera not accessible");
-      el.innerHTML = '<div style="padding: 2rem; text-align: center; color: #2d1600;"><div style="font-size: 2.5em; margin-bottom: 1rem;">📱</div><strong style="font-size: 1.1em; display: block; margin-bottom: 0.5rem;">Camera Access Denied</strong><div style="font-size: 0.9em; margin-bottom: 1rem; color: #bfa074;">Error: ' + errorMsg + '</div><div style="font-size: 0.85em; color: #bfa074;"><strong>Solution:</strong> Use the Paste token section below</div></div>';
+      el.innerHTML = '<div style="padding: 2rem; text-align: center; color: #2d1600;"><div style="font-size: 2.5em; margin-bottom: 1rem;">!</div><strong style="font-size: 1.1em; display: block; margin-bottom: 0.5rem;">Camera Access Denied</strong><div style="font-size: 0.9em; margin-bottom: 1rem; color: var(--muted);">Error: ' + errorMsg + '</div><div style="font-size: 0.85em; color: var(--muted);"><strong>Solution:</strong> Use the Paste token section below</div></div>';
       toggleControls(false);
     });
 
@@ -417,10 +411,12 @@ function setupQrScanner() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  window.lucide?.createIcons();
   setupLoginForm();
   setupCopyButtons();
   setupPasswordPeek();
   setupFormLoadingStates();
+  setupTableSearch();
   // Don't auto-setup QR scanner here - let verify.html handle it with proper timing
 });
 
@@ -431,59 +427,42 @@ function setupFormLoadingStates() {
     form.addEventListener('submit', function(e) {
       // Only add loading state if it's a regular form submission (not AJAX)
       const submitBtn = this.querySelector('button[type="submit"]');
-      if (submitBtn && !submitBtn.classList.contains('no-loading')) {
+      if (!e.defaultPrevented && submitBtn && !submitBtn.classList.contains('no-loading')) {
         submitBtn.classList.add('loading');
         submitBtn.disabled = true;
-        
-        // Original button text for restoration
-        const originalText = submitBtn.textContent;
-        submitBtn.setAttribute('data-original-text', originalText);
         
         // Restore after 3 seconds if it hasn't redirected
         setTimeout(() => {
           submitBtn.classList.remove('loading');
           submitBtn.disabled = false;
-          submitBtn.textContent = originalText;
         }, 3000);
       }
     });
   });
 }
 
-// Smooth transition for notification dismissal
-function setupNotificationDismissal() {
-  document.querySelectorAll('.flash__item').forEach(item => {
-    item.addEventListener('click', function() {
-      this.style.animation = 'slideInUp 0.3s ease-out reverse';
-      setTimeout(() => this.remove(), 300);
+function setupTableSearch() {
+  document.querySelectorAll('.admin-search input').forEach((input) => {
+    const panel = input.closest('.admin-panel');
+    const table = panel?.querySelector('table');
+    if (!table) return;
+    const rows = Array.from(table.tBodies[0].rows).filter(row => !row.querySelector('[colspan]'));
+    const emptyRow = table.tBodies[0].insertRow();
+    const cell = emptyRow.insertCell();
+    cell.colSpan = table.tHead.rows[0].cells.length;
+    cell.textContent = 'No matching records.';
+    emptyRow.hidden = true;
+    const footer = panel.querySelector('.admin-table-footer');
+    if (footer) footer.setAttribute('aria-live', 'polite');
+    input.addEventListener('input', () => {
+      const query = input.value.trim().toLocaleLowerCase();
+      let matches = 0;
+      rows.forEach(row => {
+        row.hidden = !row.textContent.toLocaleLowerCase().includes(query);
+        if (!row.hidden) matches += 1;
+      });
+      emptyRow.hidden = matches > 0 || rows.length === 0;
+      if (footer) footer.textContent = `Showing ${matches} of ${rows.length} records`;
     });
   });
 }
-
-function setupSiteInteraction() {
-  const canUseTrail = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (!canUseTrail) return;
-
-  let lastTrailTime = 0;
-  const cursorGlow = document.createElement('span');
-  cursorGlow.className = 'cursor-glow';
-  document.body.appendChild(cursorGlow);
-  document.addEventListener('mousemove', (event) => {
-    cursorGlow.style.left = `${event.clientX}px`;
-    cursorGlow.style.top = `${event.clientY}px`;
-    const now = performance.now();
-    if (now - lastTrailTime < 45) return;
-    lastTrailTime = now;
-
-    const trail = document.createElement('span');
-    trail.className = 'cursor-trail';
-    trail.style.left = `${event.clientX}px`;
-    trail.style.top = `${event.clientY}px`;
-    document.body.appendChild(trail);
-    trail.addEventListener('animationend', () => trail.remove(), { once: true });
-  });
-}
-
-document.addEventListener('DOMContentLoaded', setupNotificationDismissal);
-document.addEventListener('DOMContentLoaded', setupSiteInteraction);
-

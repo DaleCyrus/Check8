@@ -1,0 +1,11 @@
+  <aside class="admin-sidebar">
+    <a class="admin-side-brand" href="{{ url_for('admin.admin_dashboard') }}"><span class="admin-side-brand__mark"><img class="brand-symbol" src="{{ url_for('static', filename='images/check8-logo.png') }}" alt="" width="1024" height="1024" /></span><span><b>Check8</b><small>QR-enabled clearance<br>management</small></span></a>
+    {% set active_admin_page = 'admin.students' if request.endpoint in ['admin.import_students_preview', 'admin.import_students_confirm'] else request.endpoint %}
+    <nav class="admin-nav" aria-label="Administration">
+      <a class="admin-nav__link{% if active_admin_page == 'admin.admin_dashboard' %} admin-nav__link--active{% endif %}"{% if active_admin_page == 'admin.admin_dashboard' %} aria-current="page"{% endif %} href="{{ url_for('admin.admin_dashboard') }}"><span><i data-lucide="layout-dashboard" aria-hidden="true"></i></span>Dashboard</a>
+      <a class="admin-nav__link{% if active_admin_page == 'admin.students' %} admin-nav__link--active{% endif %}"{% if active_admin_page == 'admin.students' %} aria-current="page"{% endif %} href="{{ url_for('admin.students') }}"><span><i data-lucide="users" aria-hidden="true"></i></span>Students</a>
+      <a class="admin-nav__link{% if active_admin_page == 'admin.list_groups' %} admin-nav__link--active{% endif %}"{% if active_admin_page == 'admin.list_groups' %} aria-current="page"{% endif %} href="{{ url_for('admin.list_groups') }}"><span><i data-lucide="users" aria-hidden="true"></i></span>Groups &amp; Classes</a>
+      <a class="admin-nav__link{% if active_admin_page == 'admin.instructors' %} admin-nav__link--active{% endif %}"{% if active_admin_page == 'admin.instructors' %} aria-current="page"{% endif %} href="{{ url_for('admin.instructors') }}"><span><i data-lucide="user-round" aria-hidden="true"></i></span>Instructors</a>
+    </nav>
+    <div class="admin-profile"><span class="admin-profile__icon"><i data-lucide="shield-check" aria-hidden="true"></i></span><span><b>{{ current_user.full_name }}</b><small>{{ current_user.email }}</small></span></div>
+  </aside>

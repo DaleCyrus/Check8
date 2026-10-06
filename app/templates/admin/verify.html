@@ -12,15 +12,15 @@
         </div></div>
 
         <!-- Course Selection -->
-        <div style="margin-bottom: 2rem; padding: 1.5rem; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.5rem;">
-            <label class="label">Select Course to Verify:</label>
+        <div style="margin-bottom: 2rem; padding: 1.5rem; background: #fffefd; border: 1px solid #f2c6a7; border-radius: 0.5rem;">
+            <label class="label" for="courseSelector">Select Course to Verify:</label>
             <select id="courseSelector" class="input" required>
           <option value="">-- Choose a course --</option>
           {% for course in assigned_courses %}
             <option value="{{ course.id }}">{{ course.code }} - {{ course.name }}</option>
           {% endfor %}
         </select>
-            <div id="courseWarning" class="muted small" style="margin-top: 0.5rem; color: #dc2626; display: none;">
+            <div id="courseWarning" class="muted small" style="margin-top: 0.5rem; color: #a8440b; display: none;">
                 Please select a course to verify students
             </div>
         </div>
@@ -34,7 +34,7 @@
                 </div>
 
                 <div id="qrReader" class="qrReader" style="min-height: 320px; display: flex; align-items: center; justify-content: center;">
-                    <div style="text-align: center; color: #bfa074;">
+                    <div style="text-align: center; color: var(--muted);">
                         <div style="font-size: 2em; margin-bottom: 0.5rem;"></div>
                         <div style="margin-bottom: 1rem;">Loading camera...</div>
                         <div style="font-size: 0.875rem;">If this takes too long, use Paste mode below</div>
@@ -44,18 +44,19 @@
                 <div id="cameraStatus" class="muted small" style="margin-top: 0.5rem; text-align: center;">
                     <span id="cameraLoading" style="display: none;"> Initializing camera...</span>
                     <span id="cameraReady" style="display: none;">Camera ready</span>
-                    <span id="cameraError" style="display: none; color: #dc2626;"></span>
+                    <span id="cameraError" style="display: none; color: #a8440b;"></span>
                 </div>
 
                 <div class="muted small" style="margin-top: 0.5rem;">
-                    Uses <code>html5-qrcode</code>. If offline or no camera, use paste mode.
+                    If your camera is unavailable, paste the student's token instead.
                 </div>
             </div>
 
             <div>
                 <h2 class="h2"><svg class="verify-ui-icon"><use href="#verify-clipboard"></use></svg> Paste token</h2>
-                <form id="pasteTokenForm" class="form" onsubmit="handlePasteTokenSubmit(event)">
+                <form id="pasteTokenForm" class="form">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                    <label class="label" for="tokenInput">Student token</label>
                     <textarea id="tokenInput" class="input input--mono" name="token" rows="5" placeholder="Paste token here...">{{ token or "" }}</textarea>
                     <input type="hidden" id="courseIdInput" name="course_id" value="">
                     <button class="btn" type="submit"><svg class="verify-ui-icon"><use href="#verify-shield"></use></svg> Verify</button>
@@ -90,11 +91,9 @@
         const warning = document.getElementById("courseWarning");
 
         if (!courseSelected) {
-            if (cameraDiv) cameraDiv.style.opacity = "0.5";
             if (cameraDiv) cameraDiv.style.pointerEvents = "none";
             if (warning) warning.style.display = "inline";
         } else {
-            if (cameraDiv) cameraDiv.style.opacity = "1";
             if (cameraDiv) cameraDiv.style.pointerEvents = "auto";
             if (warning) warning.style.display = "none";
         }
@@ -137,7 +136,7 @@
             const statusEl = document.getElementById('cameraError');
 
             if (cameraDiv) {
-                cameraDiv.innerHTML = '<div style="padding: 2rem; text-align: center; color: #2d1600;"><div style="font-size: 2.5em; margin-bottom: 1rem;">⚠️</div><strong style="font-size: 1.1em; display: block; margin-bottom: 0.5rem;">Camera Setup Timeout</strong><div style="font-size: 0.9em; margin-bottom: 1rem; color: #bfa074;">The camera library took too long to initialize.</div><div style="font-size: 0.85em; color: #bfa074;"><strong>Please use the Paste token section below instead.</strong></div></div>';
+                cameraDiv.innerHTML = '<div style="padding: 2rem; text-align: center; color: #2d1600;"><div style="font-size: 2.5em; margin-bottom: 1rem;">!</div><strong style="font-size: 1.1em; display: block; margin-bottom: 0.5rem;">Camera Setup Timeout</strong><div style="font-size: 0.9em; margin-bottom: 1rem; color: var(--muted);">The camera library took too long to initialize.</div><div style="font-size: 0.85em; color: var(--muted);"><strong>Please use the Paste token section below instead.</strong></div></div>';
             }
             if (statusEl) {
                 statusEl.textContent = 'Library initialization timed out';

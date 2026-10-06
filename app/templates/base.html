@@ -7,21 +7,29 @@
     <meta name="csrf-token" content="{{ csrf_token() }}" />
     <title>{% block title %}CHECK8{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='neobrutal.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='navigation.css') }}" />
+    <link rel="preload" href="{{ url_for('static', filename='fonts/outfit-variable.ttf') }}" as="font" type="font/ttf" crossorigin />
+    <script defer src="{{ url_for('static', filename='lucide.min.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='gsap.min.js') }}"></script>
     <script defer src="{{ url_for('static', filename='app.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='clearance-polling.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='motion.js') }}"></script>
 </head>
 
 <body class="{% block body_class %}{% endblock %}">
+    <a class="skip-link" href="#main-content">Skip to content</a>
     <header class="topbar">
         <div class="container topbar__inner">
             <div class="brand">
-                <div class="brand__logo">C8</div>
+                <div class="brand__logo"><img class="brand-symbol" src="{{ url_for('static', filename='images/check8-logo.png') }}" alt="" width="1024" height="1024" /></div>
                 <div class="brand__text">
-                    <div class="brand__name">CHECK8</div>
+                    <div class="brand__name">Check8</div>
                     <div class="brand__tag">QR-enabled clearance management</div>
                 </div>
             </div>
 
-            <nav class="nav">
+            <nav class="nav" aria-label="Main navigation">
                 {% if current_user.is_authenticated %} {% if current_user.is_student %}
                 <a class="nav__link" href="{{ url_for('student.dashboard') }}">Dashboard</a>
                 {% elif current_user.is_admin %}
@@ -33,12 +41,14 @@
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                     <button class="btn btn--ghost" type="submit">Logout</button>
                 </form>
+                {% else %}
+                <span class="nav__institution"><i data-lucide="graduation-cap" aria-hidden="true"></i> Gordon College</span>
                 {% endif %}
             </nav>
         </div>
     </header>
 
-    <main class="container">
+    <main id="main-content" class="container" tabindex="-1">
         {% with messages = get_flashed_messages(with_categories=true) %} 
         {% if messages %}
         <div class="flash" role="alert">
@@ -53,19 +63,6 @@
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="footer">
-        
-        </div>
-    </footer>
-
-    <div class="bubble-background" aria-hidden="true">
-        <span class="background-bubble background-bubble--one"></span>
-        <span class="background-bubble background-bubble--two"></span>
-        <span class="background-bubble background-bubble--three"></span>
-        <span class="background-bubble background-bubble--four"></span>
-        <span class="background-bubble background-bubble--five"></span>
-        <span class="background-bubble background-bubble--six"></span>
-    </div>
 </body>
 
 </html>

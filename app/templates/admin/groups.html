@@ -3,40 +3,30 @@
 {% block body_class %}admin-page{% endblock %}
 {% block content %}
 <div class="admin-shell">
-  <aside class="admin-sidebar">
-    <a class="admin-side-brand" href="{{ url_for('admin.admin_dashboard') }}"><span class="admin-side-brand__mark">C8</span><span><b>CHECK8</b><small>QR-enabled clearance<br>management</small></span></a>
-    <nav class="admin-nav">
-      <a class="admin-nav__link" href="{{ url_for('admin.admin_dashboard') }}"><span>⌂</span>Dashboard</a>
-      <a class="admin-nav__link" href="{{ url_for('admin.admin_dashboard') }}#students"><span>♧</span>Students</a>
-      <a class="admin-nav__link admin-nav__link--active" href="{{ url_for('admin.list_groups') }}"><span>♧</span>Groups &amp; Classes</a>
-      <a class="admin-nav__link" href="{{ url_for('admin.instructors') }}"><span>♙</span>Instructors</a>
-      <a class="admin-nav__link" href="{{ url_for('admin.admin_dashboard') }}#accounts"><span>♢</span>Accounts</a>
-    </nav>
-    <div class="admin-profile"><span class="admin-profile__icon">♢</span><span><b>{{ current_user.full_name }}</b><small>{{ current_user.email }}</small></span></div>
-  </aside>
+  {% include "admin/_sidebar.html" %}
 
-  <main class="admin-main">
-    <header class="admin-topbar"><div></div><div class="admin-topbar__actions"><span class="admin-bell">♧<i>3</i></span><a href="{{ url_for('admin.admin_dashboard') }}">Admin Dashboard</a><form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}" /><button type="submit">Logout&nbsp; ↪</button></form></div></header>
+  <div class="admin-main">
+    <header class="admin-topbar"><div></div><div class="admin-topbar__actions"><a href="{{ url_for('admin.admin_dashboard') }}">Admin Dashboard</a><form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}" /><button type="submit">Logout&nbsp; <i data-lucide="log-out" aria-hidden="true"></i></button></form></div></header>
     <div class="admin-content groups-content">
       <div class="admin-title"><h1>Groups &amp; Classes</h1><p>Organize students into classes for easier bulk clearance management.</p></div>
       {% set membership_total = namespace(value=0) %}{% for group in groups %}{% set membership_total.value = membership_total.value + group.members|length %}{% endfor %}
       <div class="admin-summary groups-summary">
-        <div class="admin-summary-card admin-summary-card--active"><span>♧</span><b>{{ groups|length }}</b><small>Total classes</small></div>
-        <div class="admin-summary-card"><span>▣</span><b>{{ assigned_courses|length }}</b><small>Available courses</small></div>
-        <div class="admin-summary-card"><span>♙</span><b>{{ membership_total.value }}</b><small>Student memberships</small></div>
+        <div class="admin-summary-card admin-summary-card--active"><span><i data-lucide="users" aria-hidden="true"></i></span><b>{{ groups|length }}</b><small>Total classes</small></div>
+        <div class="admin-summary-card"><span><i data-lucide="book-open" aria-hidden="true"></i></span><b>{{ assigned_courses|length }}</b><small>Available courses</small></div>
+        <div class="admin-summary-card"><span><i data-lucide="user-round" aria-hidden="true"></i></span><b>{{ membership_total.value }}</b><small>Student memberships</small></div>
       </div>
 
       <section class="admin-panel groups-create-panel">
         <div class="admin-panel__heading"><div><h2>Create New Class</h2><p>Add a class to organize students and clearance work.</p></div></div>
         <form method="post" action="{{ url_for('admin.create_group') }}" class="groups-create-form">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <div class="admin-form-field"><label>COURSE CODE</label><input type="text" name="course_code" class="input" placeholder="e.g. CSPS 102" required maxlength="20" /></div>
-          <div class="admin-form-field"><label>COURSE NAME</label><input type="text" name="course_name" class="input" placeholder="e.g. Computer Programming 1" required maxlength="255" /></div>
-          <div class="admin-form-field"><label>DEPARTMENT</label><input type="text" class="input" value="{{ course_department }}" readonly /></div>
-          <div class="admin-form-field"><label>INSTRUCTOR</label><select name="instructor_id" class="input" required><option value="">Choose an instructor</option>{% for instructor in instructors %}<option value="{{ instructor.id }}">{{ instructor.full_name }}{% if instructor.employee_number %} ({{ instructor.employee_number }}){% endif %}</option>{% endfor %}</select></div>
-          <div class="admin-form-field"><label>CLASS NAME</label><input type="text" name="name" class="input" placeholder="Block A, Group 1, etc." required maxlength="255" /></div>
-          <div class="admin-form-field groups-description"><label>DESCRIPTION (OPTIONAL)</label><input type="text" name="description" class="input" placeholder="Brief description of this class" maxlength="500" /></div>
-          <button type="submit" class="btn admin-create-submit">＋ &nbsp; Create Class</button>
+          <div class="admin-form-field"><label for="field-course_code">COURSE CODE</label><input type="text" name="course_code" id="field-course_code" class="input" placeholder="e.g. CSPS 102" required maxlength="20" /></div>
+          <div class="admin-form-field"><label for="field-course_name">COURSE NAME</label><input type="text" name="course_name" id="field-course_name" class="input" placeholder="e.g. Computer Programming 1" required maxlength="255" /></div>
+          <div class="admin-form-field"><label for="course-department">DEPARTMENT</label><input id="course-department" type="text" class="input" value="{{ course_department }}" readonly /></div>
+          <div class="admin-form-field"><label for="field-instructor_id">INSTRUCTOR</label><select name="instructor_id" id="field-instructor_id" class="input" required><option value="">Choose an instructor</option>{% for instructor in instructors %}<option value="{{ instructor.id }}">{{ instructor.full_name }}{% if instructor.employee_number %} ({{ instructor.employee_number }}){% endif %}</option>{% endfor %}</select></div>
+          <div class="admin-form-field"><label for="field-name">CLASS NAME</label><input type="text" name="name" id="field-name" class="input" placeholder="Block A, Group 1, etc." required maxlength="255" /></div>
+          <div class="admin-form-field groups-description"><label for="field-description">DESCRIPTION (OPTIONAL)</label><input type="text" name="description" id="field-description" class="input" placeholder="Brief description of this class" maxlength="500" /></div>
+          <button type="submit" class="btn admin-create-submit"><i data-lucide="plus" aria-hidden="true"></i> &nbsp; Create Class</button>
         </form>
       </section>
 
@@ -44,20 +34,20 @@
         <div class="admin-panel__heading"><div><h2>Import Courses</h2><p>Upload a CSV to add several courses at once. Existing course codes are skipped.</p></div></div>
         <form method="post" action="{{ url_for('admin.import_courses') }}" enctype="multipart/form-data" class="admin-import-form">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <input type="file" name="file" accept=".csv" required />
-          <button class="btn admin-create-submit" type="submit">⇧ &nbsp; Import Courses</button>
+          <input type="file" aria-label="Import file" name="file" accept=".csv" required />
+          <button class="btn admin-create-submit" type="submit"><i data-lucide="upload" aria-hidden="true"></i> &nbsp; Import Courses</button>
         </form>
         <p class="muted small">CSV headers: <code>course_code,course_name</code>. Every imported course is assigned to {{ course_department }}.</p>
       </section>
 
       <section class="admin-panel instructor-panel groups-list-panel">
-        <div class="admin-panel__heading"><div><h2>All Classes</h2><p>Manage groups, assign students, and monitor class clearance.</p></div><label class="admin-search">⌕<input placeholder="Search classes..." /></label></div>
-        <div class="admin-table-wrap"><table class="admin-table groups-table"><thead><tr><th>CLASS NAME</th><th>COURSE</th><th>DESCRIPTION</th><th>STUDENTS</th><th>CREATED</th><th>ACTIONS</th></tr></thead><tbody>{% for group in groups %}<tr>
-          <td><div class="group-name"><span>♧</span><b>{{ group.name }}</b></div></td><td><span class="group-course">{{ group.course.code }}</span><small>{{ group.course.name }}</small></td><td>{{ group.description or 'No description' }}</td><td><span class="group-count">{{ group.members|length }}</span> student(s)</td><td>{{ group.created_at.strftime('%b %d, %Y') if group.created_at else '—' }}</td><td><div class="group-actions"><a href="{{ url_for('admin.view_group', group_id=group.id) }}" class="admin-action">Manage</a><form method="post" action="{{ url_for('admin.delete_group', group_id=group.id) }}" onsubmit="return confirm('Delete this class?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}" /><button type="submit" class="admin-action group-delete">Delete</button></form></div></td>
+        <div class="admin-panel__heading"><div><h2>All Classes</h2><p>Manage groups, assign students, and monitor class clearance.</p></div><label class="admin-search"><i data-lucide="search" aria-hidden="true"></i><input type="search" aria-label="Search classes..." placeholder="Search classes..." /></label></div>
+        <div class="admin-table-wrap" tabindex="0" role="region" aria-label="Classes"><table class="admin-table groups-table"><thead><tr><th>CLASS NAME</th><th>COURSE</th><th>DESCRIPTION</th><th>STUDENTS</th><th>CREATED</th><th>ACTIONS</th></tr></thead><tbody>{% for group in groups %}<tr>
+          <td><div class="group-name"><span><i data-lucide="users" aria-hidden="true"></i></span><b>{{ group.name }}</b></div></td><td><span class="group-course">{{ group.course.code }}</span><small>{{ group.course.name }}</small></td><td>{{ group.description or 'No description' }}</td><td><span class="group-count">{{ group.members|length }}</span> student(s)</td><td>{{ group.created_at.strftime('%b %d, %Y') if group.created_at else '—' }}</td><td><div class="group-actions"><a href="{{ url_for('admin.view_group', group_id=group.id) }}" class="admin-action">Manage</a><form method="post" action="{{ url_for('admin.delete_group', group_id=group.id) }}" onsubmit="return confirm('Delete this class?');"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}" /><button type="submit" class="admin-action group-delete">Delete</button></form></div></td>
         </tr>{% else %}<tr><td colspan="6">No classes yet. Create your first class above.</td></tr>{% endfor %}</tbody></table></div>
-        <div class="admin-table-footer">Showing 1 to {{ groups|length }} of {{ groups|length }} classes <span>‹ &nbsp; <b>1</b> &nbsp; ›</span></div>
+        <div class="admin-table-footer">Showing {{ groups|length }} classes </div>
       </section>
     </div>
-  </main>
+  </div>
 </div>
 {% endblock %}

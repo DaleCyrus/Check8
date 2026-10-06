@@ -142,5 +142,7 @@ def clearance_status_json():
             'note': cs.note or '—'
         })
     
-    return jsonify(clearances_data)
+    response = jsonify(clearances_data)
+    response.headers["Cache-Control"] = "no-store"
+    return response
 

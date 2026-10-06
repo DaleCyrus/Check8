@@ -3,28 +3,28 @@
 {% block body_class %}signup-form-page{% endblock %}
 {% block content %}
 <div class="signup-form-shell"><section class="signup-form-card">
-  <button type="button" class="signup-back" onclick="window.history.back()"><span>←</span> Back</button>
-  <div class="signup-form-heading"><div class="signup-form-icon">⌂</div><div><h1>Student Sign Up</h1><p>Create a student account to access your clearance dashboard.</p></div></div>
+  <a class="signup-back" href="{{ url_for('auth.signup') }}"><span><i data-lucide="arrow-left" aria-hidden="true"></i></span> Back</a>
+  <div class="signup-form-heading"><div class="signup-form-icon"><i data-lucide="layout-dashboard" aria-hidden="true"></i></div><div><h1>Student Sign Up</h1><p>Create a student account to access your clearance dashboard.</p></div></div>
   <form method="post" class="signup-form-grid">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
     <div class="signup-field"><label class="label" for="last_name">Last Name <span>(LN)</span></label><input id="last_name" name="last_name" class="input input--uppercase" placeholder="Enter last name" value="{{ last_name or '' }}" required /></div>
     <div class="signup-field"><label class="label" for="first_name">First Name <span>(FN)</span></label><input id="first_name" name="first_name" class="input input--uppercase" placeholder="Enter first name" value="{{ first_name or '' }}" required /></div>
     <div class="signup-field"><label class="label" for="middle_name">Middle Name <span>(MN)</span></label><input id="middle_name" name="middle_name" class="input input--uppercase" placeholder="Enter middle name" value="{{ middle_name or '' }}" /></div>
     <div class="signup-field"><label class="label" for="student_number">Student ID Number</label><input id="student_number" name="student_number" class="input" placeholder="e.g. 2022-0001" value="{{ student_number or '' }}" required /></div>
-    <div class="signup-field signup-field--full"><label class="label" for="email_username">Institutional Email</label><div class="signup-email"><input id="email_username" class="input-group__input" type="text" placeholder="e.g. delacruz.juan" required /><span>@gordoncollege.edu.ph</span></div><input id="email" name="email" type="hidden" value="{{ email or '' }}" /></div>
+    <div class="signup-field signup-field--full"><label class="label" for="email_username">Institutional Email</label><div class="signup-email"><input id="email_username" value="{{ (email or '').split('@')[0] }}" autocomplete="username" autocapitalize="off" class="input-group__input" type="text" placeholder="e.g. delacruz.juan" required /><span>@gordoncollege.edu.ph</span></div><input id="email" name="email" type="hidden" value="{{ email or '' }}" /></div>
     <div class="signup-field signup-field--full"><label class="label" for="department">Department <span>(Optional)</span></label><select id="department" name="department" class="input"><option value="">Select department</option><option value="College of Computer Studies" {% if department == "College of Computer Studies" %}selected{% endif %}>College of Computer Studies</option></select></div>
     <div class="signup-field signup-field--full"><label class="label" for="program">Program <span>(Optional)</span></label><select id="program" name="program" class="input"><option value="">Select program</option><option value="Bachelor of Science in Computer Science" {% if program == "Bachelor of Science in Computer Science" %}selected{% endif %}>Bachelor of Science in Computer Science</option><option value="Bachelor of Science in Information Technology" {% if program == "Bachelor of Science in Information Technology" %}selected{% endif %}>Bachelor of Science in Information Technology</option></select></div>
-    <div class="signup-field"><label class="label" for="password">Password</label><div class="password-field"><input id="password" name="password" type="password" class="input" autocomplete="new-password" placeholder="Enter password" required /><button type="button" class="password-toggle" data-password-toggle data-password-target="password" aria-label="Show password" aria-pressed="false">👁</button></div></div>
-    <div class="signup-field"><label class="label" for="confirm_password">Confirm password</label><div class="password-field"><input id="confirm_password" name="confirm_password" type="password" class="input" autocomplete="new-password" placeholder="Confirm password" required /><button type="button" class="password-toggle" data-password-toggle data-password-target="confirm_password" aria-label="Show password" aria-pressed="false">👁</button></div></div>
-    <button class="btn signup-submit signup-field--full" type="submit">♙ &nbsp; Create student account</button>
+    <div class="signup-field"><label class="label" for="password">Password</label><div class="password-field"><input id="password" name="password" type="password" class="input" autocomplete="new-password" placeholder="Enter password" required /><button type="button" class="password-toggle" data-password-toggle data-password-target="password" aria-label="Show password" aria-pressed="false"><i data-lucide="eye" aria-hidden="true"></i></button></div></div>
+    <div class="signup-field"><label class="label" for="confirm_password">Confirm password</label><div class="password-field"><input id="confirm_password" name="confirm_password" type="password" class="input" autocomplete="new-password" placeholder="Confirm password" required /><button type="button" class="password-toggle" data-password-toggle data-password-target="confirm_password" aria-label="Show password" aria-pressed="false"><i data-lucide="eye" aria-hidden="true"></i></button></div></div>
+    <button class="btn signup-submit signup-field--full" type="submit"><i data-lucide="user-round" aria-hidden="true"></i> &nbsp; Create student account</button>
   </form>
   <div class="signup-form-footer">Already have an account? <a href="{{ url_for('auth.login') }}">Back to login</a></div>
 </section></div>
 <script>
     document.querySelector('.signup-form-grid').addEventListener('submit', function(e) {
-        const emailUsername = document.getElementById('email_username').value;
+        const emailUsername = document.getElementById('email_username').value.trim();
         const emailField = document.getElementById('email');
-        emailField.value = emailUsername + '@gordoncollege.edu.ph';
+        emailField.value = emailUsername.includes('@') ? emailUsername : emailUsername + '@gordoncollege.edu.ph';
     });
 
 </script>

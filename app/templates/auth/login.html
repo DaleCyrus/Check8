@@ -4,34 +4,33 @@
 {% block content %}
 <div class="auth-shell">
   <section class="auth-pitch" aria-label="CHECK8 overview">
-    <div class="auth-brand"><span class="auth-brand__mark">C8</span><span><strong>CHECK8</strong><small>QR-enabled clearance management</small></span></div>
     <div class="auth-pitch__copy">
-      <h1>Smart. Secure.<br>Seamless <em>Clearances.</em></h1>
+      <h1>Smart. Secure.<br>Seamless <em>clearances.</em></h1>
       <p>CHECK8 streamlines the clearance process with QR technology, making every step faster, paperless, and secure.</p>
     </div>
-    <div class="auth-illustration" aria-hidden="true">
-      <div class="auth-platform"></div>
-      <div class="auth-qr"><span class="auth-qr__pattern">▦</span><b>C8</b></div>
-      <div class="auth-shield">✓</div>
-      <i class="auth-spark auth-spark--one">✦</i><i class="auth-spark auth-spark--two">✦</i>
+    <div class="auth-brand-art" aria-hidden="true">
+      <div class="auth-brand-art__sheet">
+        <img src="{{ url_for('static', filename='images/check8-logo.png') }}" alt="" width="1024" height="1024" fetchpriority="high" />
+      </div>
     </div>
-    <div class="auth-benefits"><span><b>♢</b><strong>Secure</strong><small>Your data is protected</small></span><span><b>◷</b><strong>Fast</strong><small>Clearances in real-time</small></span><span><b>▤</b><strong>Paperless</strong><small>No more paperwork</small></span></div>
+    <div class="auth-benefits"><span><b><i data-lucide="shield-check"></i></b><strong>Secure</strong><small>Your data is protected</small></span><span><b><i data-lucide="clock-3"></i></b><strong>Fast</strong><small>Clearances in real-time</small></span><span><b><i data-lucide="file-check-2"></i></b><strong>Paperless</strong><small>No more paperwork</small></span></div>
   </section>
 
   <section class="auth-card">
-    <div class="auth-lock">♙</div>
-    <h2>Welcome back</h2>
-    <p class="auth-card__intro">Login to your account to continue</p>
+    <div class="auth-card__heading">
+      <div class="auth-lock" aria-hidden="true"><i data-lucide="lock-keyhole"></i></div>
+      <div><h2>Welcome back.</h2><p class="auth-card__intro">Login to your account to continue</p></div>
+    </div>
     <form method="post" class="form auth-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <label class="label" for="email">Institutional Email</label>
-      <div class="auth-input-wrap"><span class="auth-input-icon">✉</span><input id="email" name="email" type="text" class="input" placeholder="e.g. 20xxxxxxx" required autocapitalize="off" /><span class="auth-domain">@gordoncollege.edu.ph</span></div>
+      <div class="auth-input-wrap"><span class="auth-input-icon" aria-hidden="true"><i data-lucide="mail"></i></span><input id="email" name="email" type="text" class="input" placeholder="Student ID or email" required autocapitalize="off" autocomplete="username" aria-describedby="email-domain" /></div>
+      <span id="email-domain" class="auth-domain">@gordoncollege.edu.ph</span>
       <label class="label" for="password">Password</label>
-      <div class="password-field auth-input-wrap"><span class="auth-input-icon">♙</span><input id="password" name="password" type="password" class="input" autocomplete="current-password" placeholder="Enter your password" required /><button type="button" class="password-toggle" data-password-toggle data-password-target="password" aria-label="Show password" aria-pressed="false">👁</button></div>
-      <div class="auth-options"><label><input type="checkbox" name="remember" /> Remember me</label><a href="#">Forgot password?</a></div>
-      <button class="btn auth-submit" type="submit">Login <span>→</span></button>
+      <div class="password-field auth-input-wrap"><span class="auth-input-icon" aria-hidden="true"><i data-lucide="lock-keyhole"></i></span><input id="password" name="password" type="password" class="input" autocomplete="current-password" placeholder="Enter your password" required /><button type="button" class="password-toggle" data-password-toggle data-password-target="password" aria-label="Show password" aria-pressed="false"><i data-lucide="eye"></i></button></div>
+      <button class="btn auth-submit" type="submit">Login <i data-lucide="arrow-right" aria-hidden="true"></i></button>
       <div class="auth-or"><span>or</span></div>
-      <a class="btn btn--ghost auth-signup" href="{{ url_for('auth.signup') }}">Create an account <span>♙</span></a>
+      <a class="btn btn--ghost auth-signup" href="{{ url_for('auth.signup') }}">Create an account <i data-lucide="user-plus" aria-hidden="true"></i></a>
     </form>
     <script>
       document.querySelector('.auth-form').addEventListener('submit', function() {
