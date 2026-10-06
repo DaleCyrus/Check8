@@ -1,5 +1,7 @@
 import os
 from dotenv import load_dotenv
+from sqlalchemy.engine import make_url
+from sqlalchemy.exc import ArgumentError
 
 load_dotenv()
 
@@ -13,13 +15,29 @@ class Config:
     INSTANCE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "instance")
     os.makedirs(INSTANCE_PATH, exist_ok=True)
     
-    _database_url = os.getenv("DATABASE_URL")
+    _database_url = (os.getenv("DATABASE_URL") or "").strip()
+    _requires_postgres = FLASK_ENV == "production" or os.getenv("RENDER") == "true"
+    if _requires_postgres:
+        if not _database_url:
+            raise ValueError(
+                "DATABASE_URL is required in production. Set the Supabase PostgreSQL "
+                "connection string in your Render web service's Environment settings."
+            )
+        try:
+            _backend = make_url(_database_url).get_backend_name()
+        except (ArgumentError, ValueError):
+            raise ValueError("DATABASE_URL must be a valid PostgreSQL connection string.") from None
+        if _backend not in ("postgresql", "postgres"):
+            raise ValueError(
+                "Production requires PostgreSQL, not SQLite or another database. "
+                "Set DATABASE_URL to your Supabase connection string."
+            )
     if not _database_url:
         _database_url = f"sqlite:///{os.path.join(INSTANCE_PATH, 'check8_fixed.db')}"
     
-    # Fix Render's postgresql:// to use psycopg2 driver
-    if _database_url and _database_url.startswith("postgresql://"):
-        _database_url = _database_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+    # Use the installed psycopg2 driver for both PostgreSQL URL forms.
+    if _database_url.startswith(("postgresql://", "postgres://")):
+        _database_url = "postgresql+psycopg2://" + _database_url.split("://", 1)[1]
     
     DATABASE_URL = _database_url
     SQLALCHEMY_DATABASE_URI = _database_url
